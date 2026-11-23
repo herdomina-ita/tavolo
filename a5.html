@@ -775,6 +775,18 @@ const pgId = (id, path) => ('pg-' + id + '-' + path).replace(/[^\w-]/g, '_');
 function pgSel(id, path, val, opts, ph, dis){
   return `<select id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" ${dis}>${ph != null ? `<option value="">${esc(ph)}</option>` : ''}${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(val ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
 }
+const pgNameBox = (id, d, ed) => S.pgRen === id && ed
+  ? `<div class="row" style="margin-top:6px"><input id="pgren-${esc(id)}" class="pgren" data-renk="${esc(id)}" value="${esc(d.eroe || '')}" aria-label="Nuovo nome dell'eroe" style="max-width:260px;font-size:18px"><button class="pri" data-act="pgrensave" data-k="${esc(id)}">Salva il nome</button><button data-act="pgrenno">Annulla</button></div>`
+  : `<div class="row" style="margin-top:6px;align-items:center"><h2 style="margin:0">${esc(d.eroe || 'Senza nome')}</h2>${ed ? `<button class="sm" data-act="pgren" data-k="${esc(id)}" title="Cambia il nome dell'eroe">✎ Cambia nome</button>` : ''}</div>`;
+function pgRename(id){
+  const d = S.pg[id], inp = document.getElementById('pgren-' + id); if (!d || !inp || !pgCanEd(id)) return;
+  const n = inp.value.trim(); if (!n) { toast("Scrivi il nome dell'eroe"); return; }
+  if (n === d.eroe) { S.pgRen = null; render(); return; }
+  const h = pgHero(d);
+  if (Object.keys(S.pg).some(k => k !== id && S.pg[k].eroe === n) || S.eroi.some(e => e.nome === n && e !== h)) { toast('Esiste già un eroe con questo nome'); return; }
+  if (h) { if (S.pgOwner || S.pgOff) { Object.values(S.pg).forEach(x => { if (x !== d && x.legame === h.nome) x.legame = n; }); h.nome = n; d.legame = n; saveGroup(); } else if (!d.legame) d.legame = h.nome; }
+  d.eroe = n; S.pgRen = null; pgSave(id); const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); toast('Nome cambiato: ' + n);
+}
 const pgIn = (id, path, val, dis, extra = '') => `<input id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" value="${esc(val ?? '')}" ${dis} ${extra}>`;
 const pgTa = (id, path, val, dis, rows = 3) => `<textarea id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" rows="${rows}" ${dis}>${esc(val ?? '')}</textarea>`;
 const pgCb = (id, path, val, dis, lab) => `<input type="checkbox" data-pg="${esc(path)}" data-pid="${esc(id)}" ${val ? 'checked' : ''} ${dis} aria-label="${esc(lab)}">`;
@@ -797,11 +809,10 @@ function pgSheetView(){
   const clsTxt = R.cls.map(x => `${x.n} ${x.lv}`).join(' / ');
   const h = pgHero(d);
   // intestazione
-  let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div><a class="lnk" href="#pg">← Schede personaggi</a><h2 style="margin:6px 0 0">${esc(d.eroe || 'Senza nome')}</h2>
+  let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div><a class="lnk" href="#pg">← Schede personaggi</a>${pgNameBox(id, d, ed)}
     <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${clsTxt} (${L}º livello)`].filter(Boolean).join(' · ') || 'Scegli specie e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div>
     <div class="row"><button data-act="pgcalc">↻ Ricalcola tutto</button>${ed ? `<button data-act="pgrest" data-k="breve">Riposo breve</button><button data-act="pgrest" data-k="lungo">Riposo lungo</button>` : '<span class="tag">Sola lettura</span>'}</div></div>
     <div class="pgg4" style="margin-top:12px">
-      <div><label>Nome dell'eroe</label>${pgIn(id, 'eroe', d.eroe, dis)}</div>
       <div><label>Classe al 1º livello</label>${pgSel(id, 'prog.0.c', R.prog[0] && R.prog[0].c, Object.keys(PGD.classi), '— scegli —', dis)}</div>
       <div><label>${PGD.nomeSpecie}</label>${pgSel(id, 'specie', d.specie, Object.keys(PGD.specie), '— scegli —', dis)}</div>
       <div><label>Background</label>${pgSel(id, 'bg', d.bg, Object.keys(PGD.bg), '— scegli —', dis)}</div>
@@ -953,6 +964,9 @@ document.addEventListener('click', e => {
   if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
   if (a === 'pgall35') { S.pgAll35 = t.checked; render(); return; }
   if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
+  if (a === 'pgren') { S.pgRen = t.dataset.k; render(); setTimeout(() => { const i = document.getElementById('pgren-' + t.dataset.k); if (i) { i.focus(); i.select(); } }, 0); return; }
+  if (a === 'pgrenno') { S.pgRen = null; const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); return; }
+  if (a === 'pgrensave') { pgRename(t.dataset.k); return; }
   if (a === 'pgexp') { if (!d) return; const blob = new Blob([JSON.stringify({tavolo: 'scheda', ed: PGD.ed, data: new Date().toISOString(), scheda: d}, null, 1)], {type: 'application/json'});
     const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = 'scheda-' + String(d.eroe || 'eroe').replace(/[^\w\-àèéìòù ]/gi, '').trim().replace(/\s+/g, '-') + '-' + PGD.ed + '.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 5000); toast('Scheda esportata'); return; }
   if (a === 'pgnew') { pgOpenDoc('m' + Date.now().toString(36), t.dataset.eroe); return; }
@@ -1022,6 +1036,8 @@ document.addEventListener('change', async e => { const t = e.target; if (t.datas
     }, e => { console.error(e); S.pgLoaded = true; });
   } catch (e) { console.error(e); }
 })();
+
+document.addEventListener('keydown', e => { const t = e.target; if (!t || !t.dataset || !t.dataset.renk) return; if (e.key === 'Enter') { e.preventDefault(); pgRename(t.dataset.renk); } else if (e.key === 'Escape') { S.pgRen = null; const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); } });
 
 function savedView(){
   const ents = Object.entries(S.saved).sort((a,b)=>(b[1].creato||0)-(a[1].creato||0));
