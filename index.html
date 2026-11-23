@@ -91,25 +91,13 @@ window.TAVOLO = (() => {
   const db = { doc, collection: c => ({ doc: id => doc(c + '/' + id), onSnapshot: (f, err) => fdb.collection(c).onSnapshot(f, err), get: () => fdb.collection(c).get() }) };
   const isM = u => !!(u && u.email && u.email.toLowerCase() === MASTER);
   let pronto; const utente = new Promise(r => pronto = r);
-  const membro = async u => {
-    if (isM(u)) return true;
-    try { const d = await fdb.doc('membri/' + u.uid).get(); return d.exists; } catch (e) { console.error(e); return false; }
-  };
-  const entra = u => { try { if (isM(u)) sessionStorage.setItem('tavolo-master', '1'); else sessionStorage.removeItem('tavolo-master'); } catch (_) {} pronto(u); window.dispatchEvent(new CustomEvent('tavolo-auth', {detail: u})); };
-  auth.onAuthStateChanged(async u => {
-    if (!u) { window.dispatchEvent(new CustomEvent('tavolo-auth', {detail: null})); return; }
-    if (await membro(u)) entra(u);
-    else window.dispatchEvent(new CustomEvent('tavolo-pw', {detail: u}));
+  auth.onAuthStateChanged(u => {
+    if (u) { try { if (isM(u)) sessionStorage.setItem('tavolo-master', '1'); else sessionStorage.removeItem('tavolo-master'); } catch (_) {} pronto(u); }
+    window.dispatchEvent(new CustomEvent('tavolo-auth', {detail: u}));
   });
-  const password = async pw => {
-    const u = auth.currentUser; if (!u) throw new Error('nessun accesso');
-    try { await fdb.doc('membri/' + u.uid).set({chiave: pw, email: u.email || '', nome: u.displayName || '', quando: Date.now()}); }
-    catch (e) { const x = new Error('password'); x.code = e && e.code === 'permission-denied' ? 'sbagliata' : (e && e.code) || 'errore'; throw x; }
-    entra(u);
-  };
   window.claude = { use: async n => { const u = await utente; return n === 'db' ? db : n === 'user' ? { isOwner: () => isM(u), canEdit: () => isM(u), can: () => isM(u), id: async () => u.uid, me: async () => ({id: u.uid, name: u.displayName || ''}) } : null; } };
   const accedi = async () => { const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({prompt: 'select_account'}); try { await auth.signInWithPopup(p); } catch (e) { if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) await auth.signInWithRedirect(p); else throw e; } };
-  return {ok: true, auth, accedi, password, esci: () => auth.signOut().then(() => { try { sessionStorage.clear(); } catch (_) {} location.reload(); }), isM};
+  return {ok: true, auth, accedi, esci: () => auth.signOut().then(() => { try { sessionStorage.clear(); } catch (_) {} location.reload(); }), isM};
 })();
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.error(e)));
 </script>
@@ -173,10 +161,7 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
 <div id="login" class="login" hidden><div class="lbox">
   <svg viewBox="0 0 120 120" width="88" height="88" aria-hidden="true"><g fill="rgba(240,138,75,.15)" stroke="#f08a4b" stroke-width="3.5" stroke-linejoin="round"><path d="M60 8 L105 34 V86 L60 112 L15 86 V34 Z"/><path d="M60 30 L88 78 H32 Z"/></g><text x="60" y="69" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="20" fill="#f3e3c1">20</text></svg>
   <h1>Il tavolo del Master</h1><p id="lmsg">Accedi con il tuo account Google per vedere il gruppo e compilare la tua scheda.</p>
-  <button type="button" class="pri" id="lgo">Accedi con Google</button>
-  <form id="lpwf" hidden><label for="lpw" style="display:block;margin:6px 0">Password del gruppo</label><input id="lpw" type="password" autocomplete="current-password" required style="width:100%;min-height:46px;border-radius:10px;border:1px solid #3a342c;background:#221f1b;color:#ece4d6;padding:0 12px;font-size:17px;margin-bottom:12px">
-  <button type="submit" class="pri">Entra</button> <button type="button" id="lout" style="background:none;border:1px solid #3a342c;color:#ece4d6">Cambia account</button></form>
-  <p class="err" id="lerr" aria-live="polite"></p></div></div>
+  <button type="button" class="pri" id="lgo">Accedi con Google</button><p class="err" id="lerr" aria-live="polite"></p></div></div>
 <script>
 (() => {
   const L = document.getElementById('login'), T = window.TAVOLO;
@@ -185,21 +170,11 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   if (!T || !T.ok) { show('Per il primo accesso serve internet. Controlla la connessione e ricarica la pagina.'); document.getElementById('lgo').hidden = true; return; }
   window.addEventListener('tavolo-auth', e => {
     const u = e.detail;
-    if (!u) { document.getElementById('lgo').hidden = false; document.getElementById('lpwf').hidden = true; show('Accedi con il tuo account Google per vedere il gruppo e compilare la tua scheda.'); return; }
+    if (!u) { show(); return; }
     L.hidden = true;
     const st = document.getElementById('stato');
     if (st && !document.getElementById('chi')) { const d = document.createElement('div'); d.className = 'chi'; d.id = 'chi'; d.innerHTML = '<span></span><button type="button" class="mbtn" id="esci">Esci</button>'; d.querySelector('span').textContent = 'Accesso: ' + (u.email || u.displayName || 'utente') + (T.isM(u) ? ' · Master' : ''); st.after(d); document.getElementById('esci').addEventListener('click', () => T.esci()); }
   });
-  window.addEventListener('tavolo-pw', e => {
-    const u = e.detail; show('Ciao ' + (u.displayName || u.email || '') + '! Per entrare scrivi la password del gruppo: te la dà il Master. Serve solo la prima volta.');
-    document.getElementById('lgo').hidden = true; document.getElementById('lpwf').hidden = false; document.getElementById('lpw').focus();
-  });
-  document.getElementById('lpwf').addEventListener('submit', async e => {
-    e.preventDefault(); const el = document.getElementById('lerr'); el.textContent = '';
-    try { await T.password(document.getElementById('lpw').value); }
-    catch (err) { el.textContent = err.code === 'sbagliata' ? 'Password sbagliata.' : 'Non riesco a controllare la password: verifica la connessione e riprova.'; document.getElementById('lpw').select(); }
-  });
-  document.getElementById('lout').addEventListener('click', () => T.esci());
   document.getElementById('lgo').addEventListener('click', async () => {
     document.getElementById('lerr').textContent = '';
     try { await T.accedi(); } catch (e) { console.error(e); document.getElementById('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'Questo indirizzo non è autorizzato in Firebase (Authentication › domini autorizzati).' : 'Accesso non riuscito: ' + ((e && e.code) || 'riprova'); }

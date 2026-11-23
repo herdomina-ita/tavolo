@@ -911,7 +911,6 @@ document.addEventListener('click', e => {
   if (!d || !pgCanEd(id)) return;
   if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
   else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
-  else if (a === 'pgdelsp') { const l = ((d.libro || {})[t.dataset.cl] || {})[t.dataset.lv]; if (l) d.libro[t.dataset.cl][t.dataset.lv] = l.filter(n => n !== t.dataset.n); }
   else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
   else if (a === 'pgrest') {
     const R = pgCalc(d);
@@ -933,7 +932,6 @@ function pgInput(t, live){
   const p = t.dataset.pg; if (!p) return;
   if (p === '_addw') { if (t.value) { d.armi = d.armi || []; d.armi.push({n: t.value}); pgSave(id); } render(); return; }
   if (p === '_adds') { if (t.value) { d.spell = d.spell || []; d.spell.push(t.value); pgSave(id); } render(); return; }
-  if (p.startsWith('_addsp|')) { const [, cl, lv] = p.split('|'); if (t.value) { d.libro = d.libro || {}; d.libro[cl] = d.libro[cl] || {}; const a = (d.libro[cl][lv] = d.libro[cl][lv] || []); a.push(t.value); a.sort((x, y) => x.localeCompare(y, 'it')); pgSave(id); } render(); return; }
   if (p === '_addt') { if (t.value) { d.tal = d.tal || []; d.tal.push(t.value); pgSave(id); } render(); return; }
   let v = t.type === 'checkbox' ? t.checked : t.value;
   if (t.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
