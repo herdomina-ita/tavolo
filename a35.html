@@ -744,7 +744,7 @@ function pgListView(){
     else if (master) act = `<button class="pri" data-act="pgnew" data-eroe="${esc(e.nome)}">Crea la scheda</button>`;
     else if (mine) act = '';
     else act = `<button class="pri" data-act="pgmine" data-eroe="${esc(e.nome)}">È il mio eroe: crea la scheda</button>`;
-    const sum = d ? [d.specie, d.classe && `${d.classe} ${L}`, d.giocatore && `giocatore: ${d.giocatore}`].filter(Boolean).map(esc).join(' · ') : 'Nessuna scheda';
+    const sum = d ? [d.specie, pgClassi(d).map(x => x.n + ' ' + x.lv).join(' / '), d.giocatore && `giocatore: ${d.giocatore}`].filter(Boolean).map(esc).join(' · ') : 'Nessuna scheda';
     return `<div class="pgrow"><div><b>${esc(e.nome)}</b><span class="muted"> · livello ${L}</span>${id && id === mine ? ' <span class="tag">la tua</span>' : ''}<div class="muted" style="font-size:14px">${sum || 'Scheda da compilare'}</div></div><div class="row">${act}</div></div>`;
   }).join('');
   const fuori = Object.keys(S.pg).filter(k => !pgHero(S.pg[k]));
@@ -753,7 +753,7 @@ function pgListView(){
   const nuovo = S.db && !master && !mine ? `<div class="card"><h3>Il tuo eroe non è nell'elenco?</h3><p class="muted">Crealo tu: scrivi il suo nome e compila la scheda. Il Master lo aggiungerà al gruppo per i punti esperienza.</p>
     <div class="row"><input id="pg-nuovo" placeholder="Nome dell'eroe" aria-label="Nome dell'eroe" style="max-width:260px"><button class="pri" data-act="pgnewmine">Crea il mio eroe</button></div></div>` : '';
   const out = fuori.length || superate.length ? `<div class="card"><h3>Eroi non ancora nel gruppo</h3><p class="muted">${master ? 'Eroi creati dai giocatori o rinominati. Aggiungili al gruppo per dar loro i punti esperienza, oppure collega la scheda a un eroe che c\'è già.' : 'Il Master li aggiungerà al gruppo.'}</p>
-    ${fuori.map(k => { const d = S.pg[k]; return `<div class="pgrow"><div><b>${esc(d.eroe || 'Senza nome')}</b>${k === mine ? ' <span class="tag">la tua</span>' : ''} <span class="muted">${esc([d.specie, d.classe, d.giocatore && 'giocatore: ' + d.giocatore].filter(Boolean).join(' · '))}</span></div><div class="row">
+    ${fuori.map(k => { const d = S.pg[k]; return `<div class="pgrow"><div><b>${esc(d.eroe || 'Senza nome')}</b>${k === mine ? ' <span class="tag">la tua</span>' : ''} <span class="muted">${esc([d.specie, pgClassi(d).map(x => x.n).join('/'), d.giocatore && 'giocatore: ' + d.giocatore].filter(Boolean).join(' · '))}</span></div><div class="row">
       ${master && d.eroe ? `<button class="pri" data-act="pgaddg" data-k="${esc(k)}">Aggiungi al gruppo</button>` : ''}
       ${pgCanEd(k) && liberi.length ? `<select data-pglink="${esc(k)}" aria-label="Collega a un eroe"><option value="">Collega a…</option>${liberi.map(e => `<option>${esc(e.nome)}</option>`).join('')}</select>` : ''}
       <a class="btnl" href="#pg-${esc(k)}">Apri</a></div></div>`; }).join('')}
@@ -776,6 +776,11 @@ function pgFeat(key, title, lv, body){
   return `<details class="pgf" data-pgo="${esc(key)}" ${open ? 'open' : ''}><summary>${lv != null ? `<span class="tag">${lv}º</span> ` : ''}${esc(title)}</summary>${body}</details>`;
 }
 
+function pgSpells(d, cl){
+  let l = (d.spellC || {})[cl];
+  if (!l) { const first = pgClassi(d).find(x => x.c.cast); l = first && first.n === cl ? (d.spell || []) : []; }
+  return l.map(n => SP && SP.find(s => s.nome === n)).filter(Boolean).sort((a, b) => a.lv - b.lv || a.nome.localeCompare(b.nome, 'it'));
+}
 
 function pgBook(d, cl){
   const out = [...(((d.libroBk || {})[cl]) || [])];
@@ -947,7 +952,7 @@ document.addEventListener('click', e => {
   if (a === 'pgdelk') { if (!(S.pgOwner || S.pgOff)) return; if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma'; return; } const k = t.dataset.k; delete S.pg[k]; S.db && S.db.doc(PGC + '/' + k).delete().catch(e => console.error(e)); render(); return; }
   if (!d || !pgCanEd(id)) return;
   if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
-  else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
+  else if (a === 'pgdels') { const cl = t.dataset.cl; if (cl) { d.spellC = d.spellC || {}; d.spellC[cl] = pgSpells(d, cl).map(x => x.nome).filter(n => n !== t.dataset.n); } else d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
   else if (a === 'pgdelbk') { const cl = t.dataset.cl, n = t.dataset.n; if (d.libroBk && d.libroBk[cl]) d.libroBk[cl] = d.libroBk[cl].filter(b => b.n !== n); const pr = (d.libro || {})[cl]; if (pr) for (const k of Object.keys(pr)) pr[k] = (pr[k] || []).filter(x => x !== n); }
   else if (a === 'pgdelsp') { const l = ((d.libro || {})[t.dataset.cl] || {})[t.dataset.lv]; if (l) { const k = t.dataset.k != null ? Number(t.dataset.k) : l.indexOf(t.dataset.n); if (k >= 0 && l[k] === t.dataset.n) l.splice(k, 1); } }
   else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
@@ -966,6 +971,7 @@ function pgInput(t, live){
   if (t.dataset.pga != null) { d.armi[Number(t.dataset.pga)].prof = t.checked; pgSave(id); render(); return; }
   const p = t.dataset.pg; if (!p) return;
   if (p === '_addw') { if (t.value) { d.armi = d.armi || []; d.armi.push({n: t.value}); pgSave(id); } render(); return; }
+  if (p.startsWith('_adds5|')) { const cl = p.split('|')[1]; if (t.value) { d.spellC = d.spellC || {}; if (!d.spellC[cl]) d.spellC[cl] = pgSpells(d, cl).map(x => x.nome); d.spellC[cl].push(t.value); pgSave(id); } render(); return; }
   if (p === '_adds') { if (t.value) { d.spell = d.spell || []; d.spell.push(t.value); pgSave(id); } render(); return; }
   if (p.startsWith('_addbk|')) { const cl = p.split('|')[1]; if (t.value) { const [n, lv] = t.value.split('|'); d.libroBk = d.libroBk || {}; const a = (d.libroBk[cl] = d.libroBk[cl] || []); if (!a.some(b => b.n === n)) a.push({n, lv: Number(lv)}); pgSave(id); } render(); return; }
   if (p.startsWith('_addsp|')) { const [, cl, lv] = p.split('|'); if (t.value) { d.libro = d.libro || {}; d.libro[cl] = d.libro[cl] || {}; const a = (d.libro[cl][lv] = d.libro[cl][lv] || []); a.push(t.value); a.sort((x, y) => x.localeCompare(y, 'it')); pgSave(id); } render(); return; }
