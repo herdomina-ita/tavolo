@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diario della missione · Il tavolo del Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Alegreya+Sans:wght@400;500;700&family=Alegreya:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;
+--bg:light-dark(#ece7de,#171513);--card:light-dark(#fbf8f2,#221f1b);--ink:light-dark(#221d17,#ece4d6);--soft:light-dark(#6c6355,#a99f8f);
+--line:light-dark(#d6cdbd,#3a342c);--brace:light-dark(#c4521f,#f08a4b);--ottone:light-dark(#9a7426,#d9b25a);--chip:light-dark(#e6dfd2,#2c2823)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Alegreya Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Alegreya SC",Georgia,serif;line-height:1.1;margin:0;text-wrap:balance}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px max(4vw,16px);border-bottom:2px solid var(--brace);background:var(--bg);position:sticky;top:0;z-index:5}
+.top svg{width:44px;height:44px;flex:0 0 auto}
+.top h1{font-size:clamp(24px,3.2vw,32px);flex:1}
+.wrap{max-width:980px;margin:0 auto;padding:clamp(16px,3vw,32px) max(4vw,16px) 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,2.4vw,24px);margin-bottom:18px}
+.muted{color:var(--soft)}
+button,.btn{min-height:40px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:inherit;font:500 16px "Alegreya Sans",sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+button:hover{border-color:var(--brace)}
+button.pri,.btn.pri{background:var(--brace);border-color:var(--brace);color:#fff6ee;font-weight:700}
+button.sm,.btn.sm{min-height:32px;padding:0 10px;font-size:14px}
+button.del{color:#b3261e}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--brace);outline-offset:2px}
+input,textarea,select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit}
+textarea{min-height:160px;resize:vertical;font-family:"Alegreya",Georgia,serif;font-size:17px;line-height:1.6}
+label{display:block;font-weight:500;font-size:14px;margin-bottom:3px;color:var(--soft)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tab{min-height:38px;padding:0 14px;border-radius:999px;background:var(--chip);border:1px solid transparent}
+.tab.on{background:var(--brace);color:#fff6ee;font-weight:700}
+.mis h2{font-size:clamp(24px,3vw,30px)}
+.obj{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:6px}
+.obj li{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.obj li:last-child{border-bottom:0}
+.obj input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;accent-color:var(--brace)}
+.obj .fatto span{text-decoration:line-through;color:var(--soft)}
+.obj span{flex:1}
+.voci{position:relative;padding-left:26px}
+.voci::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.voce{position:relative}
+.voce::before{content:"";position:absolute;left:-24px;top:26px;width:14px;height:14px;border-radius:50%;background:var(--card);border:3px solid var(--ottone)}
+.voce h3{font-size:24px;margin:2px 0 4px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.meta span{font-size:14px;background:var(--chip);border-radius:999px;padding:2px 10px}
+.testo{font-family:"Alegreya",Georgia,serif;font-size:18px;line-height:1.65;white-space:pre-wrap;margin:0}
+.box{margin-top:12px;padding:10px 12px;border-left:3px solid var(--ottone);background:light-dark(#f3ecdf,#2a2621);border-radius:0 8px 8px 0}
+.box b{font-size:14px;color:var(--soft);display:block}
+.box p{margin:2px 0 0;white-space:pre-wrap}
+.empty{text-align:center;padding:30px 10px;color:var(--soft)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+mark{background:light-dark(#f6d88f,#7a5a14);color:inherit;border-radius:3px}
+@media(max-width:600px){.voci{padding-left:18px}.voce::before{left:-17px}.voci::before{left:4px}}
+@media print{.top,.tabs,button,.noprint{display:none!important}.card{border:0;padding:0}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header class="top">
+  <svg viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 50)">
+    <circle r="44" fill="none" style="stroke:var(--ottone)" stroke-width="2.5"/><circle r="36" fill="none" style="stroke:var(--ottone)" stroke-width="1" opacity=".6"/>
+    <g style="fill:var(--ottone)" opacity=".55"><path d="M0-30 4-4 30 0 4 4 0 30-4 4-30 0-4-4Z" transform="rotate(45)"/></g>
+    <path d="M0-42 6-6 0 0Z" style="fill:var(--brace)"/><path d="M0-42-6-6 0 0Z" style="fill:light-dark(#8f3a14,#b8602f)"/>
+    <path d="M0 42 6 6 0 0Z" style="fill:var(--ottone)"/><path d="M0 42-6 6 0 0Z" style="fill:light-dark(#6e531a,#a8873f)"/>
+    <path d="M42 0 6 6 0 0Z" style="fill:var(--ottone)"/><path d="M42 0 6-6 0 0Z" style="fill:light-dark(#6e531a,#a8873f)"/>
+    <path d="M-42 0-6 6 0 0Z" style="fill:var(--ottone)"/><path d="M-42 0-6-6 0 0Z" style="fill:light-dark(#6e531a,#a8873f)"/>
+    <circle r="4" style="fill:var(--card);stroke:var(--ottone)" stroke-width="2"/></g></svg>
+  <h1>Diario della missione</h1>
+  <button type="button" id="menu" data-act="menu">← Menu</button>
+</header>
+<div class="wrap" id="app"><p class="empty">Apro il diario…</p></div>
+<div class="toast" id="toast"></div>
+<script>
+{
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cp = x => JSON.parse(JSON.stringify(x));
+let master = false; try { master = sessionStorage.getItem('tavolo-master') === '1'; } catch (_) {}
+const GIORNALI = [{id: 'g-primoverso', nome: 'Il Primo Verso', titolo: 'Il Primo Verso · Giornale', ed: '3.5',
+  desc: "Il giornale della saga, dentro il Tavolo: Diario, Atlante di Thessarim con le mappe delle città, Missioni, Taccuino e Il gruppo. Il Master rivela città, luoghi, PNG, dicerie e missioni; i giocatori li ritrovano qui, scrivono le loro teorie, il loro diario e le azioni riservate."}];
+const okUrl = u => /^https:\/\//i.test(String(u || '').trim());
+const S = {db: null, canWrite: false, diari: {}, voci: {}, cur: null, edit: null, editMis: false, nuovoDiario: false, cerca: '', pronto: false};
+try { S.cur = localStorage.getItem('tavolo-diario-cur'); } catch (_) {}
+const ED = () => master && S.canWrite;
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.k); toast.k = setTimeout(() => t.classList.remove('on'), 2200); }
+const oggi = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dataIt = d => { if (!d) return ''; const [y, m, g] = d.split('-'); return g && m && y ? `${Number(g)} ${['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'][Number(m) - 1] || ''} ${y}` : d; };
+const nid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+let qw = Promise.resolve();
+function save(path, data){
+  if (!S.db || !ED()) { toast('Per scrivere nel diario entra come Master dal menu'); return; }
+  qw = qw.then(() => data === null ? S.db.doc(path).delete() : S.db.doc(path).set(cp(data))).catch(e => { console.error(e); toast(e && e.code === 'invalid_argument' ? 'Solo il Master può scrivere nel diario' : 'Salvataggio non riuscito'); });
+}
+const diariList = () => Object.entries(S.diari).map(([id, d]) => ({id, ...d})).sort((a, b) => (a.creato || 0) - (b.creato || 0));
+const vociDi = id => Object.entries(S.voci).map(([k, v]) => ({id: k, ...v})).filter(v => v.d === id).sort((a, b) => (Number(b.n) || 0) - (Number(a.n) || 0) || (b.quando || 0) - (a.quando || 0));
+function hl(t){ const q = S.cerca.trim(); const e = esc(t); if (!q) return e; const r = new RegExp('(' + esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'); return e.replace(r, '<mark>$1</mark>'); }
+
+function vista(){
+  const L = diariList();
+  if (!S.pronto) return '<p class="empty">Apro il diario…</p>';
+  if (!S.cur || (!S.diari[S.cur] && !GIORNALI.some(g => g.id === S.cur))) S.cur = L.length ? L[L.length - 1].id : GIORNALI[0].id;
+  let out = '';
+  // scelta del diario (una campagna = un diario)
+  const G = GIORNALI.find(g => g.id === S.cur);
+  out += `<nav class="tabs" aria-label="Diari">${L.map(d => `<button type="button" class="tab${d.id === S.cur ? ' on' : ''}" data-act="apri" data-k="${esc(d.id)}">${esc(d.nome || 'Senza nome')}</button>`).join('')}${GIORNALI.map(g => `<button type="button" class="tab${g.id === S.cur ? ' on' : ''}" data-act="apri" data-k="${esc(g.id)}">📜 ${esc(g.nome)}</button>`).join('')}${ED() ? `<button type="button" class="tab" data-act="nuovod">＋ Nuovo diario</button>` : ''}</nav>`;
+  if (S.nuovoDiario && ED()) out += `<form class="card" data-form="nuovod"><h2>Nuovo diario</h2><p class="muted">Un diario per ogni campagna o missione.</p>
+    <div class="grid"><div><label for="nd-nome">Nome della campagna</label><input id="nd-nome" required placeholder="Es. L'Ombra della Regina dei Draghi"></div>
+    <div><label for="nd-link">Giornale esterno (facoltativo)</label><input id="nd-link" type="url" placeholder="https://…"></div><div><label for="nd-ed">Edizione</label><select id="nd-ed"><option value="">—</option><option>3.5</option><option>5</option><option>5.5</option></select></div></div>
+    <div class="row" style="margin-top:12px"><button class="pri" type="submit">Crea il diario</button><button type="button" data-act="annd">Annulla</button></div></form>`;
+  if (G && !S.nuovoDiario) return out + `<section class="card mis"><p class="muted" style="margin:0">Giornale della campagna${G.ed ? ' · D&D ' + esc(G.ed) : ''}</p><h2>${esc(G.titolo)}</h2>
+    <p style="margin:8px 0 14px">${esc(G.desc)}</p>
+    <button type="button" class="pri" data-act="giornale">Apri il Giornale</button></section>`;
+  if (!L.length) return out + (S.nuovoDiario ? '' : `<div class="card empty"><p>Il diario è ancora vuoto.</p>${ED() ? '<button class="pri" data-act="nuovod">Inizia il primo diario</button>' : '<p>Il Master lo aprirà dal suo account.</p>'}</div>`);
+  const d = S.diari[S.cur], V = vociDi(S.cur);
+  // missione in corso
+  const ob = d.obiettivi || [];
+  if (S.editMis && ED()) out += `<form class="card mis" data-form="mis"><h2>Missione in corso</h2>
+    <div class="grid" style="margin-top:10px"><div><label for="m-nome">Nome della campagna</label><input id="m-nome" value="${esc(d.nome)}"></div>
+    <div><label for="m-mis">Missione attuale</label><input id="m-mis" value="${esc(d.missione)}" placeholder="Es. Liberare il ponte di Drellin"></div>
+    <div><label for="m-luogo">Dove si trova il gruppo</label><input id="m-luogo" value="${esc(d.luogo)}"></div>
+    <div><label for="m-giorno">Data nel mondo di gioco</label><input id="m-giorno" value="${esc(d.giorno)}" placeholder="Es. 3º giorno di Raccolto"></div>
+    <div><label for="m-link">Giornale esterno (facoltativo)</label><input id="m-link" type="url" value="${esc(d.link)}" placeholder="https://…"></div></div>
+    <div style="margin-top:10px"><label for="m-note">Note per tutti</label><textarea id="m-note" style="min-height:90px">${esc(d.note)}</textarea></div>
+    <div class="row" style="margin-top:12px"><button class="pri" type="submit">Salva</button><button type="button" data-act="annm">Annulla</button>
+    <button type="button" class="del" data-act="deld" style="margin-left:auto">Elimina questo diario</button></div></form>`;
+  else out += `<section class="card mis"><div class="row" style="justify-content:space-between;align-items:start"><div>
+      <p class="muted" style="margin:0">${esc(d.nome)}${d.ed ? ' · D&D ' + esc(d.ed) : ''}</p>
+      <h2>${esc(d.missione || 'Missione in corso')}</h2>
+      <div class="meta">${d.luogo ? `<span>📍 ${esc(d.luogo)}</span>` : ''}${d.giorno ? `<span>🗓 ${esc(d.giorno)}</span>` : ''}<span>${V.length} ${V.length === 1 ? 'sessione' : 'sessioni'}</span></div></div>
+      <div class="row noprint">${okUrl(d.link) ? `<a class="btn pri sm" style="min-height:32px" href="${esc(d.link)}" target="_blank" rel="noopener">Apri il giornale ↗</a>` : ''}${ED() ? '<button class="sm" data-act="editm">✎ Modifica</button>' : ''}<button class="sm" data-act="stampa">Stampa</button></div></div>
+    ${d.note ? `<p class="testo" style="font-size:17px;margin-top:4px">${esc(d.note)}</p>` : ''}
+    <h3 style="font-size:20px;margin-top:14px">Obiettivi</h3>
+    ${ob.length ? `<ul class="obj">${ob.map((o, i) => `<li class="${o.fatto ? 'fatto' : ''}"><input type="checkbox" ${o.fatto ? 'checked' : ''} ${ED() ? '' : 'disabled'} data-ob="${i}" aria-label="Completato: ${esc(o.t)}"><span>${esc(o.t)}</span>${ED() ? `<button class="sm noprint" data-act="delob" data-k="${i}" aria-label="Togli l'obiettivo">✕</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted" style="margin:6px 0 0">Nessun obiettivo segnato.</p>'}
+    ${ED() ? `<form class="row noprint" data-form="ob" style="margin-top:10px"><input id="ob-new" placeholder="Nuovo obiettivo" aria-label="Nuovo obiettivo" style="flex:1;min-width:200px"><button type="submit">Aggiungi</button></form>` : ''}</section>`;
+  // nuova voce / modifica voce
+  const fv = v => `<form class="card" data-form="voce" data-k="${esc(v.id || '')}"><h2>${v.id ? 'Modifica la voce' : 'Nuova voce del diario'}</h2>
+    <div class="grid" style="margin-top:10px"><div><label for="v-n">Sessione nº</label><input id="v-n" inputmode="numeric" value="${esc(v.n)}"></div>
+    <div><label for="v-data">Data della sessione</label><input id="v-data" type="date" value="${esc(v.data)}"></div>
+    <div><label for="v-giorno">Data nel mondo di gioco</label><input id="v-giorno" value="${esc(v.giorno)}"></div>
+    <div><label for="v-luogo">Luogo</label><input id="v-luogo" value="${esc(v.luogo)}"></div></div>
+    <div style="margin-top:10px"><label for="v-titolo">Titolo</label><input id="v-titolo" value="${esc(v.titolo)}" placeholder="Es. L'imboscata al guado"></div>
+    <div style="margin-top:10px"><label for="v-testo">Cosa è successo</label><textarea id="v-testo">${esc(v.testo)}</textarea></div>
+    <div class="grid" style="margin-top:10px"><div><label for="v-png">Personaggi incontrati</label><textarea id="v-png" style="min-height:80px">${esc(v.png)}</textarea></div>
+    <div><label for="v-bott">Tesori e ricompense</label><textarea id="v-bott" style="min-height:80px">${esc(v.bottino)}</textarea></div>
+    <div><label for="v-ind">Indizi e cose da ricordare</label><textarea id="v-ind" style="min-height:80px">${esc(v.indizi)}</textarea></div></div>
+    <div class="row" style="margin-top:12px"><button class="pri" type="submit">Salva la voce</button><button type="button" data-act="annv">Annulla</button>
+    ${v.id ? `<button type="button" class="del" data-act="delv" data-k="${esc(v.id)}" style="margin-left:auto">Elimina la voce</button>` : ''}</div></form>`;
+  if (ED() && S.edit === 'nuova') { const n = V.length ? Math.max(...V.map(x => Number(x.n) || 0)) + 1 : 1; out += fv({n, data: oggi(), giorno: d.giorno || '', luogo: d.luogo || ''}); }
+  out += `<div class="row noprint" style="margin:6px 0 16px">${ED() && S.edit !== 'nuova' ? '<button class="pri" data-act="nuovav">＋ Scrivi la sessione</button>' : ''}
+    ${V.length ? `<input id="cerca" type="search" placeholder="Cerca nel diario: nomi, luoghi, indizi…" aria-label="Cerca nel diario" value="${esc(S.cerca)}" style="flex:1;min-width:200px">` : ''}</div>`;
+  const q = S.cerca.trim().toLowerCase();
+  const VV = q ? V.filter(v => [v.titolo, v.testo, v.luogo, v.png, v.bottino, v.indizi, v.giorno].join(' ').toLowerCase().includes(q)) : V;
+  if (!V.length) out += `<div class="card empty">${ED() ? 'Nessuna sessione scritta: premi «Scrivi la sessione» dopo la prima giocata.' : 'Il Master non ha ancora scritto nessuna sessione.'}</div>`;
+  else if (!VV.length) out += `<div class="card empty">Nessuna voce contiene «${esc(S.cerca)}».</div>`;
+  else out += `<div class="voci">${VV.map(v => S.edit === v.id && ED() ? fv(v) : `<article class="card voce">
+    <div class="row" style="justify-content:space-between;align-items:start"><p class="muted" style="margin:0">Sessione ${esc(v.n)}${v.data ? ' · ' + esc(dataIt(v.data)) : ''}</p>${ED() ? `<button class="sm noprint" data-act="editv" data-k="${esc(v.id)}">✎ Modifica</button>` : ''}</div>
+    <h3>${hl(v.titolo || 'Senza titolo')}</h3>
+    ${v.luogo || v.giorno ? `<div class="meta">${v.luogo ? `<span>📍 ${hl(v.luogo)}</span>` : ''}${v.giorno ? `<span>🗓 ${hl(v.giorno)}</span>` : ''}</div>` : ''}
+    ${v.testo ? `<p class="testo">${hl(v.testo)}</p>` : ''}
+    ${v.png ? `<div class="box"><b>Personaggi incontrati</b><p>${hl(v.png)}</p></div>` : ''}
+    ${v.bottino ? `<div class="box"><b>Tesori e ricompense</b><p>${hl(v.bottino)}</p></div>` : ''}
+    ${v.indizi ? `<div class="box"><b>Indizi e cose da ricordare</b><p>${hl(v.indizi)}</p></div>` : ''}</article>`).join('')}</div>`;
+  if (!ED() && master) out += '<p class="muted">Sei in modalità Master ma questo account non può scrivere: chiedi al proprietario di invitarti come Editor.</p>';
+  else if (!master) out += '<p class="muted noprint">Il diario lo scrive il Master; tu puoi leggerlo e cercarci dentro.</p>';
+  return out;
+}
+function render(){
+  const ae = document.activeElement, app = $('#app');
+  if (ae && app.contains(ae) && ae.closest('form') && ae.id !== 'cerca') return; // non disturbare chi sta scrivendo
+  const cerca = ae && ae.id === 'cerca', pos = cerca ? ae.selectionStart : 0;
+  app.innerHTML = vista();
+  if (cerca) { const c = $('#cerca'); if (c) { c.focus(); c.setSelectionRange(pos, pos); } }
+}
+const val = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+function forza(){ const ae = document.activeElement; if (ae && ae.blur) ae.blur(); render(); }
+function focusSu(id){ setTimeout(() => { const e = document.getElementById(id); if (e) e.focus(); }, 0); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, k = b.dataset.k;
+  if (a === 'giornale') { try { sessionStorage.setItem('tavolo-ed', 'giornale'); } catch (_) {} location.hash = ''; location.reload(); return; }
+  if (a === 'menu') { try { sessionStorage.removeItem('tavolo-ed'); } catch (_) {} location.hash = ''; location.reload(); return; }
+  if (a === 'apri') { S.cur = k; S.edit = null; S.editMis = false; S.cerca = ''; try { localStorage.setItem('tavolo-diario-cur', k); } catch (_) {} forza(); return; }
+  if (a === 'nuovod') { S.nuovoDiario = true; forza(); focusSu('nd-nome'); return; }
+  if (a === 'annd') { S.nuovoDiario = false; forza(); return; }
+  if (a === 'editm') { S.editMis = true; forza(); focusSu('m-mis'); return; }
+  if (a === 'annm') { S.editMis = false; forza(); return; }
+  if (a === 'deld') { const d = S.diari[S.cur]; if (!d || !confirmUI(b, 'Eliminare il diario «' + (d.nome || '') + '» con tutte le sue voci?')) return;
+    vociDi(S.cur).forEach(v => { delete S.voci[v.id]; save('diariovoci/' + v.id, null); }); delete S.diari[S.cur]; save('diari/' + S.cur, null); S.cur = null; S.editMis = false; forza(); toast('Diario eliminato'); return; }
+  if (a === 'delob') { const d = S.diari[S.cur]; d.obiettivi.splice(Number(k), 1); save('diari/' + S.cur, d); forza(); return; }
+  if (a === 'nuovav') { S.edit = 'nuova'; forza(); focusSu('v-titolo'); return; }
+  if (a === 'editv') { S.edit = k; forza(); focusSu('v-testo'); return; }
+  if (a === 'annv') { S.edit = null; forza(); return; }
+  if (a === 'delv') { if (!confirmUI(b, 'Eliminare questa voce del diario?')) return; delete S.voci[k]; save('diariovoci/' + k, null); S.edit = null; forza(); toast('Voce eliminata'); return; }
+  if (a === 'stampa') { window.print(); return; }
+});
+// conferma in due tocchi, senza finestre del browser
+function confirmUI(b, msg){ if (b.dataset.sure === '1') return true; b.dataset.sure = '1'; const t = b.textContent; b.textContent = 'Tocca ancora per confermare'; toast(msg); setTimeout(() => { if (b.isConnected) { b.dataset.sure = ''; b.textContent = t; } }, 4000); return false; }
+document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.ob != null && ED()) { const d = S.diari[S.cur]; d.obiettivi[Number(t.dataset.ob)].fatto = t.checked; save('diari/' + S.cur, d); t.closest('li').classList.toggle('fatto', t.checked); } });
+document.addEventListener('input', e => { if (e.target.id === 'cerca') { S.cerca = e.target.value; render(); } });
+document.addEventListener('submit', e => {
+  const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); const tipo = f.dataset.form;
+  if (tipo === 'nuovod') { const nome = val('nd-nome'); if (!nome) { toast('Scrivi il nome della campagna'); return; } const id = nid('d'); const link = val('nd-link'); if (link && !okUrl(link)) { toast('Il collegamento deve iniziare con https://'); return; } S.diari[id] = {nome, ed: val('nd-ed'), link, missione: '', luogo: '', giorno: '', note: '', obiettivi: [], creato: Date.now()}; save('diari/' + id, S.diari[id]); S.cur = id; S.nuovoDiario = false; S.editMis = true; try { localStorage.setItem('tavolo-diario-cur', id); } catch (_) {} forza(); focusSu('m-mis'); toast('Diario creato'); return; }
+  if (tipo === 'mis') { const d = S.diari[S.cur], link = val('m-link'); if (link && !okUrl(link)) { toast('Il collegamento deve iniziare con https://'); return; } Object.assign(d, {link, nome: val('m-nome') || d.nome, missione: val('m-mis'), luogo: val('m-luogo'), giorno: val('m-giorno'), note: document.getElementById('m-note').value.trim()}); save('diari/' + S.cur, d); S.editMis = false; forza(); toast('Missione aggiornata'); return; }
+  if (tipo === 'ob') { const t = val('ob-new'); if (!t) return; const d = S.diari[S.cur]; (d.obiettivi = d.obiettivi || []).push({t, fatto: false}); save('diari/' + S.cur, d); forza(); focusSu('ob-new'); return; }
+  if (tipo === 'voce') { const id = f.dataset.k || nid('v'), old = S.voci[id] || {};
+    const v = {...old, d: S.cur, n: Number(val('v-n')) || '', data: val('v-data'), giorno: val('v-giorno'), luogo: val('v-luogo'), titolo: val('v-titolo'), testo: document.getElementById('v-testo').value.trim(), png: val('v-png'), bottino: val('v-bott'), indizi: val('v-ind'), quando: old.quando || Date.now()};
+    if (!v.titolo && !v.testo) { toast('Scrivi almeno un titolo o il racconto'); return; }
+    S.voci[id] = v; save('diariovoci/' + id, v); const d = S.diari[S.cur]; if (v.luogo && v.luogo !== d.luogo || v.giorno && v.giorno !== d.giorno) { d.luogo = v.luogo || d.luogo; d.giorno = v.giorno || d.giorno; save('diari/' + S.cur, d); }
+    S.edit = null; forza(); toast('Voce salvata'); return; }
+});
+(async () => {
+  const fine = setTimeout(() => { if (!S.pronto) { S.pronto = true; render(); } }, 10000);
+  try {
+    const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+    if (!db) { S.pronto = true; clearTimeout(fine); $('#app').innerHTML = '<div class="card empty">Il diario non riesce a collegarsi ai dati. Ricarica la pagina.</div>'; return; }
+    S.db = db; S.canWrite = !!(user && (user.isOwner() || (user.canEdit && user.canEdit())));
+    let a = false, b = false; const go = () => { if (a && b) { S.pronto = true; clearTimeout(fine); } render(); };
+    db.collection('diari').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = cp(d.data()); S.diari = o; a = true; go(); }, e => { console.error(e); a = true; go(); });
+    db.collection('diariovoci').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = cp(d.data()); S.voci = o; b = true; go(); }, e => { console.error(e); b = true; go(); });
+  } catch (e) { console.error(e); S.pronto = true; render(); }
+})();
+}
+</script>
+</body>
+</html>
