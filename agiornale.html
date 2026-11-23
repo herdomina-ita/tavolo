@@ -112,6 +112,7 @@ header.top .role{margin-left:auto}
 .prose,.testo,blockquote{font-family:"Alegreya",Georgia,serif;font-size:18px;line-height:1.65}
 .mapwrap{border-color:var(--ottone);border-radius:9px}
 .ritr{border-color:var(--ottone)}
+.pref h3{font-family:"Alegreya SC",Georgia,serif;font-size:22px;margin:1.2em 0 .4em;color:var(--bronzo)}.pref blockquote{border-left:3px solid var(--ottone);margin:0 0 1em;padding:6px 14px;font-style:italic;color:var(--soft)}.pref ul{padding-left:1.2em}.pref li{margin:.3em 0}
 .tavback{min-height:38px;padding:0 12px;font-size:15px}.pvio{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.pvio label{cursor:pointer}
 @media(prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -128,6 +129,7 @@ header.top .role{margin-left:auto}
     <circle r="4" style="fill:var(--page);stroke:var(--ottone)" stroke-width="2"/></g></svg>
   <h1>Il Primo Verso</h1>
   <nav id="nav">
+    <a href="#prefazione" data-v="prefazione">Prefazione</a>
     <a href="#diario" data-v="diario">Diario</a>
     <a href="#atlante" data-v="atlante">Atlante</a>
     <a href="#missioni" data-v="missioni">Missioni</a>
@@ -145,7 +147,7 @@ header.top .role{margin-left:auto}
 const $ = s => document.querySelector(s);
 const CATS = {L:'Locande e taverne',T:'Templi e santuari',G:'Gilde, botteghe e mercati',P:'Potere e guardia',S:'Luoghi della saga e altri'};
 const MW = 2000, MH = 1533;
-const S = {img:{},sc:{},arsIdx:null,arsCache:{},runSc:false,liveSc:'',autoSc:false,grp:{},teo:{},dia:{},az:{},cus:{},subs:{},me:null,canWrite:true,run:false,live:'',auto:false,names:true,assets:null,db:null,user:null,isDM:false,asPlayer:false,master:{},pub:{},dm:{},dp:{},view:'diario',city:null,sel:null,cat:'',zoom:1,ctab:'luoghi',minor:null,edit:null,loaded:false,err:''};
+const S = {img:{},sc:{},arsIdx:null,arsCache:{},runSc:false,liveSc:'',autoSc:false,grp:{},teo:{},dia:{},az:{},cus:{},subs:{},me:null,canWrite:true,run:false,live:'',auto:false,names:true,assets:null,db:null,user:null,isDM:false,asPlayer:false,master:{},pub:{},dm:{},dp:{},view:'prefazione',testi:{},prefEdit:false,city:null,sel:null,cat:'',zoom:1,ctab:'luoghi',minor:null,edit:null,loaded:false,err:''};
 
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const strip = h => { const d = new DOMParser().parseFromString('<div>'+(h||'')+'</div>','text/html'); return d.body.textContent.trim(); };
@@ -199,7 +201,7 @@ document.addEventListener('click', e => { if (e.target.closest('#tavback')) { tr
 function pvExport(){
   const docs = {};
   const put = (c, o) => { for (const [k, v] of Object.entries(o || {})) docs[c + '/' + k] = v; };
-  put('master', S.master); put('pubblico', S.pub); put('diario_m', S.dm); put('diario_p', S.dp); put('gruppo', S.grp); put('img', S.img);
+  put('master', S.master); put('pubblico', S.pub); put('diario_m', S.dm); put('diario_p', S.dp); put('gruppo', S.grp); put('img', S.img); put('testi', S.testi);
   for (const [u, o] of Object.entries(S.teo || {})) put(`gruppo/${u}/teorie`, o);
   for (const [u, o] of Object.entries(S.dia || {})) put(`gruppo/${u}/diario`, o);
   for (const [u, o] of Object.entries(S.az || {})) put(`riservate/${u}/azioni`, o);
@@ -217,6 +219,25 @@ async function pvImport(file, msg){
 }
 document.addEventListener('change', e => { if ((e.target.id === 'pvimp' || e.target.id === 'pvimph') && e.target.files[0]) { const f = e.target.files[0]; e.target.value = ''; pvImport(f, document.getElementById('impmsg') || document.getElementById('pvmsg')); } });
 document.addEventListener('click', e => { if (e.target.closest('#pvexp')) pvExport(); });
+
+
+// ---------- PREFAZIONE
+const PREF_BASE = "Le campane di Thessarim suonano da più di trecento anni. Suonano all'alba e al tramonto, suonano quando nasce un bambino e quando muore un vecchio, suonano quando dalle paludi oltre il Muro sale la nebbia. Finché suonano, dicono i Campanari, nessuno può essere dimenticato.\n\nNella nebbia, il Grigiore, non si muore. Si sparisce. Chi ci resta troppo a lungo torna a casa e trova la porta chiusa, perché nessuno lo aspetta più. I figli non ricordano la madre, il mercante non ricorda il socio, la moglie non ricorda di essersi sposata. Nel registro della parrocchia resta una riga bianca dove c'era un nome.\n\nPer questo ogni neonato del regno viene portato sotto la campana, e il Campanaro canta il suo nome nel bronzo. Da quel giorno il bambino è intonato, e la campana lo protegge.\n\nQuasi ogni bambino.\n\nCi sono persone a cui la campana non ha mai risposto. Il prete ha cantato il loro nome, una volta, due, tre, e il bronzo è rimasto muto. Non possono possedere terre, né testimoniare in tribunale, né sposarsi nei templi. La gente le chiama Senzaeco, e non sempre con gentilezza.\n\nQuattro di loro, quest'anno, si trovano a Pieve di Rovo, un villaggio di colline e vigne basse a due giorni dal Muro. Non si conoscono bene. Non sanno di avere qualcosa in comune.\n\nDomani è la Festa delle Intonazioni. Ci saranno lanterne di carta, pane dolce con l'uvetta, i dolcetti alle noci della vedova Ines e tre famiglie sotto il campanile con i neonati in braccio. Padre Aldo tirerà la corda, come ogni anno.\n\nAl secondo rintocco, la campana si spaccherà.\n\nE quella notte, mentre la nebbia scende dalle colline, quattro persone che il mondo non ha mai voluto ricordare scopriranno di essere le uniche capaci di ricordare tutto.";
+function prefView(){
+  const dm = dmOn(), mio = (S.testi.prefazione||{}).testo, t = mio || PREF_BASE;
+  if (dm && S.prefEdit) return `<h2>Prefazione</h2><div class="card"><p class="muted" style="margin-top:0">La leggono tutti i giocatori. Si può usare **grassetto**, *corsivo*, ## titoli, - elenchi e > citazioni.</p>
+    <label for="pref-t">Testo della prefazione</label><textarea id="pref-t" rows="24">${esc(t)}</textarea>
+    <div class="row"><button class="pri" type="button" id="prefsave">Salva</button><button type="button" id="prefcanc">Annulla</button>${mio?'<button type="button" id="prefreset" style="margin-left:auto">Torna al testo originale</button>':''}</div></div>`;
+  return `<div class="row" style="justify-content:space-between;align-items:center;max-width:820px"><h2 style="margin:0">Prefazione</h2>${dm?'<button type="button" id="prefed">✎ Modifica</button>':''}</div>
+    <article class="card prose pref" style="max-width:820px;margin-top:12px">${md(t)}</article>`;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('#prefed,#prefsave,#prefcanc,#prefreset'); if (!t || !dmOn()) return;
+  if (t.id === 'prefed') { S.prefEdit = true; render(); setTimeout(() => { const x = document.getElementById('pref-t'); if (x) x.focus(); }, 0); }
+  else if (t.id === 'prefcanc') { S.prefEdit = false; const ta = document.getElementById('pref-t'); if (ta) ta.value = ta.defaultValue; render(); }
+  else if (t.id === 'prefsave') { const v = document.getElementById('pref-t').value.trim(); S.testi.prefazione = {testo: v}; S.prefEdit = false; S.clearForm = true; const ta = document.getElementById('pref-t'); if (ta) ta.defaultValue = ta.value; render(); write('testi/prefazione', () => S.db.doc('testi/prefazione').set({testo: v})).then(() => toast('Prefazione salvata')); }
+  else if (t.id === 'prefreset') { delete S.testi.prefazione; S.prefEdit = false; render(); write('testi/prefazione', () => S.db.doc('testi/prefazione').delete()).then(() => toast('Testo originale ripristinato')); }
+});
 
 // ---------- dati di comodo
 const regno = () => S.master._regno;
@@ -242,7 +263,7 @@ function render(){
   if (S.isDM && !regno() && !S.asPlayer) { m.innerHTML = importView(); return; }
   const keep = {}, act = document.activeElement && document.activeElement.id;
   for (const el of m.querySelectorAll('input[id],textarea[id],select[id]')) if (el.type!=='checkbox' && el.value !== el.defaultValue && !(S.clearForm && /^(e|h|s|xp|hp)-/.test(el.id))) keep[el.id] = el.value;
-  m.innerHTML = S.view==='atlante' ? atlasView() : S.view==='missioni' ? missionsView() : S.view==='taccuino' ? notebookView() : S.view==='gruppo' ? groupView() : diaryView();
+  m.innerHTML = S.view==='prefazione' ? prefView() : S.view==='atlante' ? atlasView() : S.view==='missioni' ? missionsView() : S.view==='taccuino' ? notebookView() : S.view==='gruppo' ? groupView() : diaryView();
   S.clearForm = false;
   for (const [id,v] of Object.entries(keep)) { const el = document.getElementById(id); if (el) el.value = v; }
   if (act) { const el = document.getElementById(act); if (el && el.focus) el.focus(); }
@@ -883,7 +904,7 @@ async function importSeed(pw){
 }
 
 // ---------- avvio
-function route(){ const h=location.hash.replace('#',''); S.view=['diario','atlante','missioni','taccuino','gruppo','custode','scontri'].includes(h)?h:'diario'; if(S.view!=='atlante'){S.city=null;} render(); }
+function route(){ const h=location.hash.replace('#',''); S.view=['prefazione','diario','atlante','missioni','taccuino','gruppo'].includes(h)?h:'prefazione'; if(S.view!=='atlante'){S.city=null;} render(); }
 window.addEventListener('hashchange', route);
 function listen(path, target){
   return S.db.collection(path).onSnapshot(snap => {
@@ -923,6 +944,7 @@ function listenGroup(){
   try { S.auto = localStorage.getItem('custodeAuto') === '1'; S.autoSc = localStorage.getItem('scontriAuto') === '1'; } catch(_) {}
   S.sample = null;
   listen('pubblico','pub'); listen('diario_p','dp');
+  S.db.collection('testi').onSnapshot(snap => { const o = {}; for (const d of snap.docs) o[d.id] = d.data(); S.testi = o; render(); }, e => console.error(e));
   S.db.collection('img').onSnapshot(snap => { const o = {}; for (const d of snap.docs) o[d.id] = d.data(); S.img = o; render(); }, e => console.error(e));
   listenGroup();
   if (S.isDM){ listen('master','master'); listen('diario_m','dm'); listen('custode','cus'); listen('scontri','sc');
