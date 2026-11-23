@@ -855,11 +855,11 @@ function pgSheetView(){
   out += `<div class="card"><h3>Abilità</h3>
     <p class="${R.speso > R.pts ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Punti abilità spesi: <b>${R.speso}/${R.pts}</b>${c ? ` — 1º livello: (${c.pa} ${sgn(R.md.int)} Int) × 4${R.umano ? ' + 4 umano' : ''}; livelli successivi: punti della classe di quel livello ${sgn(R.md.int)} Int${R.umano ? ' + 1 umano' : ''} (minimo 1).` : ''} Gradi massimi: ${L + 3} nelle abilità di classe (in grassetto), ${String((L + 3) / 2).replace('.', ',')} nelle altre, che costano 2 punti per grado.</p>
     <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Caratteristica</th><th>Gradi</th><th>Automatici</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) + ' ' + sgn(s.m) : '—'}</td>
-      <td>${pgIn(id, 'gradi.' + s.n, (d.gradi || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Gradi in ${esc(s.n)}" style="width:64px" ${s.troppo ? 'class="pgbadin"' : ''}`)}</td>
+      <td>${pgIn(id, 'gradi.' + s.n, (d.gradi || {})[s.n] || 0, dis, `inputmode="numeric" aria-label="Gradi in ${esc(s.n)}" style="width:64px" ${s.troppo ? 'class="pgbadin"' : ''}`)}</td>
       <td class="muted" style="font-size:14px" title="${esc(s.parti.map(p => sgn(p[0]) + ' ' + p[1]).join(', '))}">${s.parti.length ? s.parti.map(p => `${sgn(p[0])} ${esc(p[1])}`).join('<br>') : ''}</td>
-      <td>${pgIn(id, 'skMisc.' + s.n, (d.skMisc || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Bonus vari in ${esc(s.n)}" style="width:64px"`)}</td>
-      <td><b>${s.no ? '—' : sgn(s.v)}</b></td></tr>`).join('')}</tbody></table>
-    <p class="muted" style="font-size:14px">«—»: abilità utilizzabile solo con almeno 1 grado. «Automatici»: razza, taglia, talenti, sinergie (+2 con 5 gradi in un'abilità collegata) e penalità di armatura. Le sinergie valide solo in certe situazioni vanno nei «Vari».</p></div>`;
+      <td>${pgIn(id, 'skMisc.' + s.n, (d.skMisc || {})[s.n] || 0, dis, `inputmode="numeric" aria-label="Bonus vari in ${esc(s.n)}" style="width:64px"`)}</td>
+      <td><b>${sgn(s.v)}</b>${s.no ? ' <span class="muted" title="Si può usare solo con almeno 1 grado">*</span>' : ''}</td></tr>`).join('')}</tbody></table>
+    <p class="muted" style="font-size:14px">«*»: abilità utilizzabile solo con almeno 1 grado. «Automatici»: razza, taglia, talenti, sinergie (+2 con 5 gradi in un'abilità collegata) e penalità di armatura. Le sinergie valide solo in certe situazioni vanno nei «Vari».</p></div>`;
   // incantesimi (una tabella per ogni classe incantatrice)
   for (const m of R.magie) {
     const sl = (d.slotUsati && !Array.isArray(d.slotUsati) ? d.slotUsati[m.cl] : null) || [];
@@ -921,8 +921,10 @@ document.addEventListener('click', e => {
   else if (a === 'pgdel') { if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma: elimina'; return; } delete S.pg[id]; S.db && S.db.doc(PGC + '/' + id).delete().catch(e => console.error(e)); location.hash = 'pg'; return; }
   pgSave(id); render();
 });
+document.addEventListener('focusin', e => { const t = e.target; if (S.pgTyping && S.pgTyping.id === t.id && Date.now() - S.pgTyping.t < 2000) return; if (t && t.dataset && t.dataset.pid && t.getAttribute && t.getAttribute('inputmode') === 'numeric' && !t.disabled) { try { t.select(); } catch (_) {} } });
 document.addEventListener('toggle', e => { const t = e.target; if (t.dataset && t.dataset.pgo) S.pgOpen[t.dataset.pgo] = t.open; }, true);
 function pgInput(t, live){
+  S.pgTyping = {id: t.id, t: Date.now()};
   const id = t.dataset.pid, d = S.pg[id]; if (!d || !pgCanEd(id)) return;
   if (t.dataset.pgm != null) { const k = Number(t.dataset.pgm), n = Number(t.dataset.n); d.morte[k] = t.checked ? n : n - 1; pgSave(id); render(); return; }
   if (t.dataset.pgs != null) { const k = Number(t.dataset.pgs), n = Number(t.dataset.n); d.slotUsati = d.slotUsati || []; d.slotUsati[k] = t.checked ? n : n - 1; for (let i = 0; i < k; i++) if (d.slotUsati[i] == null) d.slotUsati[i] = 0; pgSave(id); render(); return; }

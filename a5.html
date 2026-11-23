@@ -920,8 +920,10 @@ document.addEventListener('click', e => {
   else if (a === 'pgdel') { if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma: elimina'; return; } delete S.pg[id]; S.db && S.db.doc(PGC + '/' + id).delete().catch(e => console.error(e)); location.hash = 'pg'; return; }
   pgSave(id); render();
 });
+document.addEventListener('focusin', e => { const t = e.target; if (S.pgTyping && S.pgTyping.id === t.id && Date.now() - S.pgTyping.t < 2000) return; if (t && t.dataset && t.dataset.pid && t.getAttribute && t.getAttribute('inputmode') === 'numeric' && !t.disabled) { try { t.select(); } catch (_) {} } });
 document.addEventListener('toggle', e => { const t = e.target; if (t.dataset && t.dataset.pgo) S.pgOpen[t.dataset.pgo] = t.open; }, true);
 function pgInput(t, live){
+  S.pgTyping = {id: t.id, t: Date.now()};
   const id = t.dataset.pid, d = S.pg[id]; if (!d || !pgCanEd(id)) return;
   if (t.dataset.pgm != null) { const k = Number(t.dataset.pgm), n = Number(t.dataset.n); d.morte[k] = t.checked ? n : n - 1; pgSave(id); render(); return; }
   if (t.dataset.pgs != null) { const k = Number(t.dataset.pgs), n = Number(t.dataset.n); d.slotUsati = d.slotUsati || []; d.slotUsati[k] = t.checked ? n : n - 1; for (let i = 0; i < k; i++) if (d.slotUsati[i] == null) d.slotUsati[i] = 0; pgSave(id); render(); return; }
