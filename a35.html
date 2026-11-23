@@ -553,103 +553,136 @@ const sgn = n => (n >= 0 ? '+' : '−') + Math.abs(n);
 const ARR_STD = [15, 14, 13, 12, 10, 8];
 const PUNTI = {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 6, 15: 8, 16: 10, 17: 13, 18: 16};
 S.pg = {}; S.pgOpen = {};
-const pgNew = (eroe) => ({eroe, giocatore:'', classe:'', specie:'', alli:'', divinita:'', divinitaAltra:'', dom1:'', dom2:'', metodo:'manuale',
+const pgNew = (eroe) => ({eroe, giocatore:'', classe:'', prog:[], specie:'', alli:'', divinita:'', divinitaAltra:'', dom1:'', dom2:'', metodo:'manuale',
   base:{for:10, des:10, cos:10, int:10, sag:10, car:10}, extra:{}, gradi:{}, skMisc:{}, arm:'', scudo:'', caNat:0, caDev:0, caMisc:0,
   tsMisc:{f:0, r:0, v:0}, pfAgg:0, pfAtt:'', pfTemp:'', danniNL:'', armi:[], monete:{mr:0, ma:0, mo:0, mp:0}, equip:'', tal:[], talTxt:'',
-  lingue:'', usi:'', spellTxt:{}, slotUsati:[], aspetto:'', storia:'', personalita:'', liv:1});
+  lingue:'', usi:'', spellTxt:{}, slotUsati:{}, aspetto:'', storia:'', personalita:'', liv:1});
 const pgCanEd = id => !!(S.pgOff || S.pgOwner || (S.uid && id === S.uid));
 const pgHero = d => S.eroi.find(e => e.nome === d.eroe);
 const pgLv = d => { const h = pgHero(d); return h ? livello(h.pe) : (Number(d.liv) || 1); };
-const pgCls = d => PGD.classi[d.classe] || null;
 const pgSpe = d => PGD.specie[d.specie] || null;
 const pgHas = (d, t) => (d.tal || []).includes(t);
-const pgDoms = d => d.classe === 'Chierico' ? [d.dom1, d.dom2].filter(x => x && PGD.domini[x]) : [];
 const pgDio = d => PGD.dei[d.divinita] || null;
+// progressione: la classe presa a ogni livello del personaggio
+function pgProg(d){
+  const L = pgLv(d), p = Array.isArray(d.prog) ? d.prog : [], out = [];
+  let last = d.classe || '';
+  for (let i = 0; i < L; i++) { const x = p[i] || {}; const c = PGD.classi[x.c] ? x.c : last; out.push({c, pf: x.pf}); if (c) last = c; }
+  return out;
+}
+function pgClassi(d){ // [{n, lv, c}] in ordine di primo livello
+  const m = new Map();
+  for (const x of pgProg(d)) if (x.c) m.set(x.c, (m.get(x.c) || 0) + 1);
+  return [...m].map(([n, lv]) => ({n, lv, c: PGD.classi[n]}));
+}
+const pgLvIn = (d, n) => (pgClassi(d).find(x => x.n === n) || {lv: 0}).lv;
+const pgCls = d => { const l = pgClassi(d); return l.length ? l[0].c : null; };
+const pgDoms = d => pgLvIn(d, 'Chierico') ? [d.dom1, d.dom2].filter(x => x && PGD.domini[x]) : [];
 const SMALL = {'1d2': '1', '1d3': '1d2', '1d4': '1d3', '1d6': '1d4', '1d8': '1d6', '1d10': '1d8', '1d12': '1d10', '2d4': '1d6', '2d6': '1d10'};
 const TAL_SK = {'Allerta': ['Ascoltare', 'Osservare'], 'Atletico': ['Saltare', 'Scalare'], 'Autosufficiente': ['Guarire', 'Sopravvivenza'], 'Diligente': ['Valutare', 'Decifrare Scritture'],
   'Furtivo': ['Muoversi Silenziosamente', 'Nascondersi'], 'Negoziatore': ['Diplomazia', 'Percepire Intenzioni'], 'Persuasivo': ['Raggirare', 'Intimidire'], 'Talento Magico': ['Sapienza Magica', 'Utilizzare Oggetti Magici']};
+// sinergie: 5 gradi nella prima danno +2 alle altre
+const SINERGIE = {'Acrobazia': ['Equilibrio', 'Saltare'], 'Addestrare Animali': ['Cavalcare'], 'Conoscenze (arcane)': ['Sapienza Magica'], 'Conoscenze (locali)': ['Raccogliere Informazioni'],
+  'Conoscenze (nobiltà e regalità)': ['Diplomazia'], 'Percepire Intenzioni': ['Diplomazia'], 'Raggirare': ['Diplomazia', 'Intimidire', 'Rapidità di Mano'], 'Saltare': ['Acrobazia'],
+  'Sopravvivenza': ['Conoscenze (natura)'], 'Utilizzare Corde': ['Artista della Fuga'], 'Artista della Fuga': ['Utilizzare Corde']};
 function pgScore(d, a){
   const sp = pgSpe(d);
   return (Number(d.base[a]) || 0) + ((sp && sp.bonus[a]) || 0) + (Number((d.extra || {})[a]) || 0);
 }
 function pgCalc(d){
-  const L = pgLv(d), c = pgCls(d), sp = pgSpe(d), picc = sp && sp.taglia === 'P';
+  const L = pgLv(d), cls = pgClassi(d), prog = pgProg(d), c = cls.length ? cls[0].c : null, sp = pgSpe(d), picc = sp && sp.taglia === 'P';
+  const lvIn = n => (cls.find(x => x.n === n) || {lv: 0}).lv;
   const sc = {}, md = {}; for (const a of PCARK) { sc[a] = pgScore(d, a); md[a] = pgMod(sc[a]); }
-  const bab = !c ? 0 : c.bab === 'a' ? L : c.bab === 'm' ? Math.floor(L * 3 / 4) : Math.floor(L / 2);
-  const tsBase = k => c ? (c.ts.includes(k) ? 2 + Math.floor(L / 2) : Math.floor(L / 3)) : 0;
-  const grazia = c && d.classe === 'Paladino' && L >= 2 ? Math.max(0, md.car) : 0, fort = sp && sp.tsTutti ? 1 : 0;
-  const ts = {f: tsBase('f') + md.cos + (pgHas(d, 'Tempra Possente') ? 2 : 0), r: tsBase('r') + md.des + (pgHas(d, 'Riflessi Fulminei') ? 2 : 0), v: tsBase('v') + md.sag + (pgHas(d, 'Volontà di Ferro') ? 2 : 0)};
+  let bab = 0; for (const x of cls) bab += x.c.bab === 'a' ? x.lv : x.c.bab === 'm' ? Math.floor(x.lv * 3 / 4) : Math.floor(x.lv / 2);
+  const tsBase = k => cls.reduce((s, x) => s + (x.c.ts.includes(k) ? 2 + Math.floor(x.lv / 2) : Math.floor(x.lv / 3)), 0);
+  const grazia = lvIn('Paladino') >= 2 ? Math.max(0, md.car) : 0, fort = sp && sp.tsTutti ? 1 : 0;
+  const tsb = {f: tsBase('f'), r: tsBase('r'), v: tsBase('v')};
+  const ts = {f: tsb.f + md.cos + (pgHas(d, 'Tempra Possente') ? 2 : 0), r: tsb.r + md.des + (pgHas(d, 'Riflessi Fulminei') ? 2 : 0), v: tsb.v + md.sag + (pgHas(d, 'Volontà di Ferro') ? 2 : 0)};
   for (const k in ts) ts[k] += grazia + fort + (Number((d.tsMisc || {})[k]) || 0);
   // armatura e scudo
   const ar = PGD.armature.find(x => x[0] === d.arm), sh = PGD.scudi.find(x => x[0] === d.scudo);
   let maxDes = 99; if (ar) maxDes = ar[2]; if (sh && d.scudo === 'Scudo torre') maxDes = Math.min(maxDes, 2);
   const dex = Math.min(md.des, maxDes), acp = (ar ? ar[3] : 0) + (sh ? sh[2] : 0);
+  const monaco = lvIn('Monaco');
   let monk = 0;
-  if (c && d.classe === 'Monaco' && !ar && !sh) monk = Math.max(0, md.sag) + c.col[1][1][L - 1];
+  if (monaco && !ar && !sh) monk = Math.max(0, md.sag) + PGD.classi.Monaco.col[1][1][monaco - 1];
   const taglia = picc ? 1 : 0, sch = pgHas(d, 'Schivare') ? 1 : 0, nat = Number(d.caNat) || 0, dev = Number(d.caDev) || 0, mis = Number(d.caMisc) || 0;
   const ca = 10 + (ar ? ar[1] : 0) + (sh ? sh[1] : 0) + dex + taglia + nat + dev + mis + sch + monk;
   const contatto = 10 + dex + taglia + dev + sch + monk + mis;
-  const keepDex = c && ((d.classe === 'Barbaro' && L >= 2) || (d.classe === 'Ladro' && L >= 4));
+  const keepDex = lvIn('Barbaro') >= 2 || lvIn('Ladro') >= 4;
   const sprovvista = ca - (keepDex ? 0 : Math.max(0, dex) + sch);
   const avvisi = [];
-  if (ar && c && !c.arm.includes(ar[5]) && !pgHas(d, 'Competenza nelle Armature (' + {l: 'leggere', m: 'medie', p: 'pesanti'}[ar[5]] + ')')) avvisi.push(`Il ${d.classe.toLowerCase()} non ha competenza in questa armatura: la penalità di armatura si applica anche ai tiri per colpire.`);
-  if (sh && c && !c.scudo && !pgHas(d, 'Competenza negli Scudi')) avvisi.push('Questa classe non ha competenza negli scudi.');
-  if (sh && d.scudo === 'Scudo torre' && c && c.scudo < 2) avvisi.push('Lo scudo torre richiede il talento Competenza negli Scudi Torre.');
-  let fall = 0; if (c && c.cast && c.cast.arc) { fall = (ar ? ar[4] : 0) + (sh ? sh[3] : 0); if (d.classe === 'Bardo' && ar && ar[5] === 'l') fall = sh ? sh[3] : 0; }
+  const armOk = new Set(cls.flatMap(x => [...x.c.arm])), scudoOk = Math.max(0, ...cls.map(x => x.c.scudo));
+  if (ar && cls.length && !armOk.has(ar[5]) && !pgHas(d, 'Competenza nelle Armature (' + {l: 'leggere', m: 'medie', p: 'pesanti'}[ar[5]] + ')')) avvisi.push('Nessuna competenza in questa armatura: la penalità di armatura si applica anche ai tiri per colpire.');
+  if (sh && cls.length && !scudoOk && !pgHas(d, 'Competenza negli Scudi')) avvisi.push('Nessuna competenza negli scudi.');
+  if (sh && d.scudo === 'Scudo torre' && cls.length && scudoOk < 2) avvisi.push('Lo scudo torre richiede il talento Competenza negli Scudi Torre.');
   // velocità
   let vel = sp ? sp.vel : 9;
   const pesante = ar && ar[5] !== 'l';
   if (pesante && d.specie !== 'Nano') vel = vel === 9 ? 6 : 4.5;
-  if (c && d.classe === 'Barbaro' && !(ar && ar[5] === 'p')) vel += 3;
-  if (c && d.classe === 'Monaco' && !ar && !sh) vel += [0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 9, 12, 12, 12, 15, 15, 15, 18, 18, 18][L - 1];
-  // punti ferita
-  let pf = 0;
-  if (c) { pf = c.dv + md.cos; for (let i = 2; i <= L; i++) pf += Math.max(1, Math.floor(c.dv / 2) + 1 + md.cos); }
+  if (lvIn('Barbaro') && !(ar && ar[5] === 'p')) vel += 3;
+  if (monaco && !ar && !sh) vel += [0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 9, 12, 12, 12, 15, 15, 15, 18, 18, 18][monaco - 1];
+  // punti ferita, livello per livello
+  const pfRighe = prog.map((x, i) => { const cc = PGD.classi[x.c]; if (!cc) return {dv: 0, tiro: 0, tot: 0};
+    const tiro = i === 0 ? cc.dv : (x.pf !== '' && x.pf != null && !isNaN(Number(x.pf)) ? Math.max(1, Math.min(cc.dv, Number(x.pf))) : Math.floor(cc.dv / 2) + 1);
+    return {dv: cc.dv, tiro, tot: Math.max(1, tiro + md.cos), auto: i > 0 && (x.pf === '' || x.pf == null)}; });
+  let pf = pfRighe.reduce((s, x) => s + x.tot, 0);
   if (pgHas(d, 'Robustezza')) pf += 3;
   pf = Math.max(1, pf + (Number(d.pfAgg) || 0));
+  const dadi = cls.map(x => `${x.lv}d${x.c.dv}`).join(' + ');
   const ini = md.des + (pgHas(d, 'Iniziativa Migliorata') ? 4 : 0);
   const lotta = bab + md.for + (picc ? -4 : 0) + (pgHas(d, 'Lottare Migliorato') ? 4 : 0);
   const iter = []; for (let b = bab; iter.length < 4 && (b > 0 || iter.length === 0); b -= 5) iter.push(b);
   // abilità
-  const cs = new Set(c ? c.cs : []);
+  const cs = new Set(cls.flatMap(x => x.c.cs));
   for (const dm of pgDoms(d)) for (const k of PGD.domini[dm][1]) cs.add(k);
-  const pts = c ? Math.max(1, c.pa + md.int) * (L + 3) + (sp && sp.paExtra ? L + 3 : 0) : 0;
+  const umano = !!(sp && sp.paExtra);
+  const ptsRighe = prog.map((x, i) => { const cc = PGD.classi[x.c]; if (!cc) return 0; return Math.max(1, cc.pa + md.int) * (i === 0 ? 4 : 1) + (umano ? (i === 0 ? 4 : 1) : 0); });
+  const pts = ptsRighe.reduce((a, b) => a + b, 0);
   let speso = 0;
+  const gr = n => Number((d.gradi || {})[n]) || 0;
   const sk = PGD.abil.map(([n, a, sol, pen]) => {
-    const r = Number((d.gradi || {})[n]) || 0, cl = cs.has(n);
+    const r = gr(n), cl = cs.has(n);
     speso += cl ? r : r * 2;
-    let v = Math.floor(r) + (a ? md[a] : 0) + ((sp && sp.skb[n]) || 0) + (Number((d.skMisc || {})[n]) || 0);
-    if (picc && n === 'Nascondersi') v += 4;
-    for (const [t, l] of Object.entries(TAL_SK)) if (pgHas(d, t) && l.includes(n)) v += 2;
-    if (pen) v += acp * pen;
+    const parti = [];
+    const add = (v, t) => { if (v) parti.push([v, t]); };
+    add((sp && sp.skb[n]) || 0, 'razza');
+    if (picc && n === 'Nascondersi') add(4, 'taglia Piccola');
+    for (const [t, l] of Object.entries(TAL_SK)) if (pgHas(d, t) && l.includes(n)) add(2, t);
+    for (const [k, l] of Object.entries(SINERGIE)) if (gr(k) >= 5 && l.includes(n)) add(2, 'sinergia ' + k);
+    if (pen && acp) add(acp * pen, 'penalità armatura');
+    const auto = parti.reduce((s, x) => s + x[0], 0), misc = Number((d.skMisc || {})[n]) || 0, m = a ? md[a] : 0;
+    const v = Math.floor(r) + m + auto + misc;
     const max = cl ? L + 3 : (L + 3) / 2;
-    return {n, a, cl, r, v, max, troppo: r > max, no: sol && r <= 0};
+    return {n, a, m, cl, r, v, auto, parti, max, troppo: r > max, no: sol && r <= 0};
   });
   // talenti disponibili
-  const talN = 1 + Math.floor(L / 3) + (sp && sp.talExtra ? 1 : 0) + (c && c.talBonus ? c.talBonus.filter(x => x <= L).length : 0);
-  // incantesimi
-  let mag = null;
-  if (c && c.cast) {
-    const k = c.cast, m = md[k.car], row = k.tab[L - 1] || [];
+  const talBonus = cls.reduce((s, x) => s + (x.c.talBonus ? x.c.talBonus.filter(l => l <= x.lv).length : 0), 0);
+  const talN = 1 + Math.floor(L / 3) + (sp && sp.talExtra ? 1 : 0) + talBonus;
+  // incantesimi, una sezione per ogni classe incantatrice
+  let fall = 0;
+  if (cls.some(x => x.c.cast && x.c.cast.arc)) { fall = (ar ? ar[4] : 0) + (sh ? sh[3] : 0); if (cls.every(x => !x.c.cast || !x.c.cast.arc || x.n === 'Bardo') && ar && ar[5] === 'l') fall = sh ? sh[3] : 0; }
+  const magie = cls.filter(x => x.c.cast).map(x => {
+    const k = x.c.cast, m = md[k.car], row = k.tab[x.lv - 1] || [];
     const lv = row.map((base, i) => {
       if (base == null) return null;
       let n = base + (i > 0 && m >= i ? 1 + Math.floor((m - i) / 4) : 0);
       if (sc[k.car] < 10 + i) n = 0;
-      return {i, n, dom: k.dom && i > 0 ? 1 : 0, noti: k.noti ? (k.noti[L - 1] || [])[i] : null, cd: 10 + i + m};
+      return {i, n, dom: k.dom && i > 0 ? 1 : 0, noti: k.noti ? (k.noti[x.lv - 1] || [])[i] : null, cd: 10 + i + m};
     });
-    mag = {car: k.car, lv, lc: k.half ? (L >= 4 ? Math.floor(L / 2) : 0) : L, fall};
-  }
-  return {L, bab, iter, sc, md, ts, ca, contatto, sprovvista, acp, avvisi, vel, pf, ini, lotta, sk, pts, speso, talN, mag, c, sp, picc, perc: 0};
+    return {cl: x.n, car: k.car, lv, lc: k.half ? (x.lv >= 4 ? Math.floor(x.lv / 2) : 0) : x.lv, fall, dom: !!k.dom};
+  }).filter(m => m.lv.some(Boolean));
+  return {L, cls, prog, bab, iter, sc, md, ts, tsb, ca, contatto, sprovvista, acp, avvisi, vel, pf, pfRighe, dadi, ini, lotta, sk, pts, ptsRighe, speso, talN, magie, fall, c, sp, picc, umano};
 }
 function pgWeaponProf(d, w){
-  const c = pgCls(d); if (!c) return false;
+  const cls = pgClassi(d); if (!cls.length) return false;
   if (w[0] === "Colpo senz'armi") return true;
   const sp = pgSpe(d), cat = w[4][0];
-  const l = [...(c.armiX || []), ...((sp && sp.armiP) || [])];
+  const l = [...cls.flatMap(x => x.c.armiX || []), ...((sp && sp.armiP) || [])];
   if (l.includes(w[0])) return true;
   const dio = pgDio(d); if (dio && pgDoms(d).includes('Guerra') && dio[2] === w[0]) return true;
-  if (cat === 's' && c.armi.includes('s')) return true;
-  if (cat === 'g' && c.armi.includes('g')) return true;
+  if (cat === 's' && cls.some(x => x.c.armi.includes('s'))) return true;
+  if (cat === 'g' && cls.some(x => x.c.armi.includes('g'))) return true;
   if ((d.tal || []).some(t => t.startsWith('Competenza nelle Armi')) && cat !== 's') return null;
   return false;
 }
@@ -663,7 +696,8 @@ function pgAttack(d, R, a){
   let prof = a.prof == null ? pgWeaponProf(d, w) : !!a.prof; if (prof == null) prof = true;
   const bonus = att + (R.picc ? 1 : 0) + (prof ? 0 : -4) + (Number(a.bonus) || 0);
   let dad = w[1];
-  if (R.c && d.classe === 'Monaco' && w[0] === "Colpo senz'armi") dad = R.c.col[0][1][R.L - 1];
+  const mon = (R.cls.find(x => x.n === 'Monaco') || {lv: 0}).lv;
+  if (mon && w[0] === "Colpo senz'armi") dad = PGD.classi.Monaco.col[0][1][mon - 1];
   if (R.picc) dad = dad.split('/').map(x => SMALL[x] || x).join('/');
   const fm = dist && !lancio ? Math.min(0, R.md.for) : due ? Math.floor(R.md.for * 1.5) : R.md.for;
   const dm = fm + (Number(a.bonusD) || 0);
@@ -743,24 +777,37 @@ function pgSheetView(){
   const id = S.pgId, d = S.pg[id];
   if (!d) return `<div class="card"><p class="empty">${S.pgLoaded ? 'Questa scheda non esiste più.' : 'Apro la scheda…'}</p><a class="btnl" href="#pg">← Schede personaggi</a></div>`;
   const ed = pgCanEd(id), dis = ed ? '' : 'disabled', R = pgCalc(d), c = R.c, sp = R.sp, L = R.L, h = pgHero(d);
+  const clsTxt = R.cls.map(x => `${x.n} ${x.lv}`).join(' / ');
   const n = (p, v) => pgIn(id, p, v, dis, 'inputmode="numeric"');
   let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div><a class="lnk" href="#pg">← Schede personaggi</a><h2 style="margin:6px 0 0">${esc(d.eroe || 'Senza nome')}</h2>
-    <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${d.classe} di ${L}º livello`].filter(Boolean).join(' · ') || 'Scegli razza e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div>
+    <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${clsTxt} (${L}º livello)`].filter(Boolean).join(' · ') || 'Scegli razza e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div>
     <div class="row"><button data-act="pgcalc">↻ Ricalcola tutto</button>${ed ? `<button data-act="pgrest" data-k="lungo">Riposo (8 ore)</button>` : '<span class="tag">Sola lettura</span>'}</div></div>
     <div class="pgg4" style="margin-top:12px">
       <div><label>Nome dell'eroe</label>${pgIn(id, 'eroe', d.eroe, dis)}</div>
-      <div><label>Classe</label>${pgSel(id, 'classe', d.classe, Object.keys(PGD.classi), '— scegli —', dis)}</div>
+      <div><label>Classe al 1º livello</label>${pgSel(id, 'prog.0.c', R.prog[0] && R.prog[0].c, Object.keys(PGD.classi), '— scegli —', dis)}</div>
       <div><label>Razza</label>${pgSel(id, 'specie', d.specie, Object.keys(PGD.specie), '— scegli —', dis)}</div>
       <div><label>Giocatore</label>${pgIn(id, 'giocatore', d.giocatore, dis)}</div>
       <div><label>Allineamento</label>${pgSel(id, 'alli', d.alli, ['Legale buono', 'Neutrale buono', 'Caotico buono', 'Legale neutrale', 'Neutrale', 'Caotico neutrale', 'Legale malvagio', 'Neutrale malvagio', 'Caotico malvagio'], '—', dis)}</div>
       <div><label>Divinità</label>${pgSel(id, 'divinita', d.divinita, [...Object.keys(PGD.dei).map(k => [k, `${k} (${PGD.dei[k][0]})`]), ['Altra', 'Altra divinità…']], 'Nessuna', dis)}</div>
       ${d.divinita === 'Altra' ? `<div><label>Nome della divinità</label>${pgIn(id, 'divinitaAltra', d.divinitaAltra, dis)}</div>` : ''}
-      ${d.classe === 'Chierico' ? (() => { const dio = pgDio(d), opts = dio ? dio[1] : Object.keys(PGD.domini); return `<div><label>Dominio 1</label>${pgSel(id, 'dom1', d.dom1, opts.filter(x => x !== d.dom2), '— scegli —', dis)}</div><div><label>Dominio 2</label>${pgSel(id, 'dom2', d.dom2, opts.filter(x => x !== d.dom1), '— scegli —', dis)}</div>`; })() : ''}
+      ${pgLvIn(d, 'Chierico') ? (() => { const dio = pgDio(d), opts = dio ? dio[1] : Object.keys(PGD.domini); return `<div><label>Dominio 1</label>${pgSel(id, 'dom1', d.dom1, opts.filter(x => x !== d.dom2), '— scegli —', dis)}</div><div><label>Dominio 2</label>${pgSel(id, 'dom2', d.dom2, opts.filter(x => x !== d.dom1), '— scegli —', dis)}</div>`; })() : ''}
       ${!h ? `<div><label>Livello</label>${n('liv', d.liv)}</div>` : `<div><label>Livello</label><div class="lv">${L}</div></div>`}
     </div>
     ${pgDio(d) ? `<p class="muted" style="margin:8px 0 0;font-size:15px"><b>${esc(d.divinita)}</b>, ${esc(pgDio(d)[3])} · allineamento ${esc(pgDio(d)[0])} · domini: ${esc(pgDio(d)[1].join(', '))} · arma preferita: ${esc(pgDio(d)[2].toLowerCase())}</p>` : ''}
     ${!h ? `<p class="pgwarn">${esc(d.eroe || 'Questo eroe')} non è ancora nel gruppo: il livello si scrive a mano qui sopra finché il Master non lo aggiunge.${S.pgOwner || S.pgOff ? ` <button class="sm pri" data-act="pgaddg" data-k="${esc(id)}">Aggiungi al gruppo</button>` : ''}</p>` : ''}
     ${R.avvisi.map(a => `<p class="pgwarn">${esc(a)}</p>`).join('')}</div>`;
+  // progressione e multiclasse
+  if (c) {
+    const opts = Object.keys(PGD.classi);
+    out += `<div class="card"><h3>Livelli e classi</h3><p class="muted" style="font-size:14px;margin-top:0">Per ogni livello scegli la classe presa (multiclasse) e scrivi i punti ferita tirati: il dado da tirare dipende dalla classe di quel livello. Al 1º livello i PF sono il massimo del dado; se lasci vuoto si usa la media.</p>
+    <table class="pgt"><thead><tr><th>Livello</th><th>Classe</th><th>Dado Vita</th><th>Tiro</th><th>+ Cos</th><th>PF</th><th>Punti abilità</th></tr></thead><tbody>
+    ${R.prog.map((x, i) => { const rr = R.pfRighe[i], cc = PGD.classi[x.c];
+      return `<tr><td>${i + 1}º</td><td>${i === 0 ? `<b>${esc(x.c || '—')}</b>` : pgSel(id, `prog.${i}.c`, x.c, opts, '—', dis)}</td><td>${cc ? 'd' + cc.dv : '—'}</td>
+      <td>${i === 0 ? `<span class="muted">${rr.tiro} (massimo)</span>` : pgIn(id, `prog.${i}.pf`, x.pf ?? '', dis, `inputmode="numeric" placeholder="${rr.tiro} (media)" aria-label="PF tirati al livello ${i + 1}" style="width:110px"`)}</td>
+      <td>${sgn(R.md.cos)}</td><td><b>${rr.tot}</b></td><td>${R.ptsRighe[i]}</td></tr>`; }).join('')}
+    </tbody></table>
+    <p class="muted" style="font-size:14px">Totale: ${esc(clsTxt)} · Dadi Vita ${esc(R.dadi)} · attacco base ${sgn(R.bab)}${R.pf !== R.pfRighe.reduce((a, b) => a + b.tot, 0) ? ' · PF con talenti e rettifiche: ' + R.pf : ''}. ${L < 20 ? `Al prossimo livello tira il dado della classe che prendi${R.cls.length ? ' (' + R.cls.map(x => x.n + ': d' + x.c.dv).join(', ') + ')' : ''}.` : ''}</p></div>`;
+  }
   // caratteristiche
   const pts = PCARK.reduce((s, a) => s + (PUNTI[d.base[a]] ?? 99), 0);
   out += `<div class="card"><h3>Caratteristiche</h3>
@@ -774,13 +821,13 @@ function pgSheetView(){
   // combattimento
   out += `<div class="card"><h3>Combattimento</h3><div class="pgstat">
     <div><span>Classe Armatura</span><b>${R.ca}</b><em>contatto ${R.contatto} · colto alla sprovvista ${R.sprovvista}</em></div>
-    <div><span>Punti ferita</span><b>${R.pf}</b>${c ? `<em>d${c.dv} per livello</em>` : ''}</div>
+    <div><span>Punti ferita</span><b>${R.pf}</b>${c ? `<em>Dadi Vita: ${R.dadi}</em>` : ''}</div>
     <div><span>Iniziativa</span><b>${sgn(R.ini)}</b></div>
     <div><span>Velocità</span><b>${String(R.vel).replace('.', ',')} m</b></div>
     <div><span>Attacco base</span><b>${R.iter.map(sgn).join('/')}</b></div>
     <div><span>Lotta</span><b>${sgn(R.lotta)}</b></div></div>
-    <div class="pgstat" style="margin-top:8px">${[['f', 'Tempra'], ['r', 'Riflessi'], ['v', 'Volontà']].map(([k, t]) => `<div><span>${t}</span><b>${sgn(R.ts[k])}</b></div>`).join('')}
-      <div><span>Penalità armatura</span><b>${R.acp}</b></div>${R.mag && R.mag.fall ? `<div><span>Fallimento arcano</span><b>${R.mag.fall}%</b></div>` : ''}</div>
+    <div class="pgstat" style="margin-top:8px">${[['f', 'Tempra', 'cos'], ['r', 'Riflessi', 'des'], ['v', 'Volontà', 'sag']].map(([k, t, a]) => `<div><span>${t}</span><b>${sgn(R.ts[k])}</b><em>base ${sgn(R.tsb[k])} · ${PCARN[a].slice(0, 3)} ${sgn(R.md[a])}</em></div>`).join('')}
+      <div><span>Penalità armatura</span><b>${R.acp}</b></div>${R.fall ? `<div><span>Fallimento arcano</span><b>${R.fall}%</b></div>` : ''}</div>
     <div class="pgg4" style="margin-top:12px">
       <div><label>Armatura</label>${pgSel(id, 'arm', d.arm, PGD.armature.map(a => [a[0], `${a[0]} (+${a[1]})`]), 'Nessuna', dis)}</div>
       <div><label>Scudo</label>${pgSel(id, 'scudo', d.scudo, PGD.scudi.map(a => [a[0], `${a[0]} (+${a[1]})`]), 'Nessuno', dis)}</div>
@@ -800,36 +847,39 @@ function pgSheetView(){
       <td>${r.w ? `<label class="row" style="gap:4px;margin:0"><input type="checkbox" data-pga="${i}" data-pid="${esc(id)}" ${r.prof ? 'checked' : ''} ${dis} aria-label="Competenza"> comp.</label>` : ''}</td>
       <td><input data-pgab="${i}" data-pid="${esc(id)}" id="pg-${esc(id)}-ab${i}" inputmode="numeric" value="${esc(a.bonus || '')}" placeholder="bonus" aria-label="Bonus a colpire (talenti, magia)" style="width:70px" ${dis}></td>
       <td>${ed ? `<button class="sm" data-act="pgdelw" data-i="${i}" aria-label="Togli ${esc(a.n)}">✕</button>` : ''}</td></tr>`; }).join('');
-  out += `<div class="card"><h3>Attacchi</h3>${c ? `<p class="muted" style="font-size:14px;margin-top:0">Competenze nelle armi: ${esc(c.armiTxt)}${sp && sp.armiP ? ' · ' + esc(sp.armiP.join(', ')) : ''}. Senza competenza: −4.</p>` : ''}
+  out += `<div class="card"><h3>Attacchi</h3>${c ? `<p class="muted" style="font-size:14px;margin-top:0">Competenze nelle armi: ${esc(R.cls.map(x => x.c.armiTxt).join(' · '))}${sp && sp.armiP ? ' · ' + esc(sp.armiP.join(', ')) : ''}. Senza competenza: −4.</p>` : ''}
     <table class="pgt"><thead><tr><th>Arma</th><th>Colpire</th><th>Danni</th><th></th><th>Bonus</th><th></th></tr></thead><tbody>${ats || '<tr><td colspan="6" class="muted">Nessuna arma</td></tr>'}</tbody></table>
     ${ed ? `<div class="row" style="margin-top:8px">${pgSel(id, '_addw', '', PGD.armi.map(w => w[0]), 'Aggiungi un\'arma…', '')}</div>` : ''}
     <p class="muted" style="font-size:14px">I danni includono la Forza (×1,5 con le armi a due mani). Nella colonna Bonus scrivi Arma Focalizzata, armi magiche e simili.</p></div>`;
   // abilità
   out += `<div class="card"><h3>Abilità</h3>
-    <p class="${R.speso > R.pts ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Punti abilità spesi: ${R.speso}/${R.pts}${c ? ` ((${c.pa} + Int) × ${L + 3}${sp && sp.paExtra ? ' + umano' : ''})` : ''}. Gradi massimi: ${L + 3} nelle abilità di classe (in grassetto), ${String((L + 3) / 2).replace('.', ',')} nelle altre, che costano 2 punti per grado.</p>
-    <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Car.</th><th>Gradi</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) : '—'}</td>
+    <p class="${R.speso > R.pts ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Punti abilità spesi: <b>${R.speso}/${R.pts}</b>${c ? ` — 1º livello: (${c.pa} ${sgn(R.md.int)} Int) × 4${R.umano ? ' + 4 umano' : ''}; livelli successivi: punti della classe di quel livello ${sgn(R.md.int)} Int${R.umano ? ' + 1 umano' : ''} (minimo 1).` : ''} Gradi massimi: ${L + 3} nelle abilità di classe (in grassetto), ${String((L + 3) / 2).replace('.', ',')} nelle altre, che costano 2 punti per grado.</p>
+    <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Caratteristica</th><th>Gradi</th><th>Automatici</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) + ' ' + sgn(s.m) : '—'}</td>
       <td>${pgIn(id, 'gradi.' + s.n, (d.gradi || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Gradi in ${esc(s.n)}" style="width:64px" ${s.troppo ? 'class="pgbadin"' : ''}`)}</td>
+      <td class="muted" style="font-size:14px" title="${esc(s.parti.map(p => sgn(p[0]) + ' ' + p[1]).join(', '))}">${s.parti.length ? s.parti.map(p => `${sgn(p[0])} ${esc(p[1])}`).join('<br>') : ''}</td>
       <td>${pgIn(id, 'skMisc.' + s.n, (d.skMisc || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Bonus vari in ${esc(s.n)}" style="width:64px"`)}</td>
       <td><b>${s.no ? '—' : sgn(s.v)}</b></td></tr>`).join('')}</tbody></table>
-    <p class="muted" style="font-size:14px">«—»: abilità utilizzabile solo con almeno 1 grado. Le sinergie (+2 con 5 gradi in un'abilità collegata) vanno nei bonus vari.</p></div>`;
-  // incantesimi
-  if (R.mag) {
-    const m = R.mag, sl = d.slotUsati || [];
-    out += `<div class="card"><h3>Incantesimi</h3><div class="pgstat"><div><span>Caratteristica</span><b>${PCARN[m.car]}</b></div><div><span>Livello dell'incantatore</span><b>${m.lc}</b></div>
+    <p class="muted" style="font-size:14px">«—»: abilità utilizzabile solo con almeno 1 grado. «Automatici»: razza, taglia, talenti, sinergie (+2 con 5 gradi in un'abilità collegata) e penalità di armatura. Le sinergie valide solo in certe situazioni vanno nei «Vari».</p></div>`;
+  // incantesimi (una tabella per ogni classe incantatrice)
+  for (const m of R.magie) {
+    const sl = (d.slotUsati && !Array.isArray(d.slotUsati) ? d.slotUsati[m.cl] : null) || [];
+    const hasN = m.lv.some(y => y && y.noti != null);
+    out += `<div class="card"><h3>Incantesimi da ${esc(m.cl.toLowerCase())}</h3><div class="pgstat"><div><span>Caratteristica</span><b>${PCARN[m.car]} ${sgn(R.md[m.car])}</b></div><div><span>Livello dell'incantatore</span><b>${m.lc}</b></div>
       ${m.fall ? `<div><span>Fallimento arcano</span><b>${m.fall}%</b></div>` : ''}</div>
-      <table class="pgt" style="margin-top:10px"><thead><tr><th>Livello</th><th>Al giorno</th><th>CD</th>${m.lv.some(x => x && x.noti != null) ? '<th>Conosciuti</th>' : ''}<th>Spesi</th><th>Incantesimi</th></tr></thead><tbody>
-      ${m.lv.map(x => x && `<tr><td>${x.i}º</td><td><b>${x.n}${x.dom ? ' + 1' : ''}</b></td><td>${x.cd}</td>${m.lv.some(y => y && y.noti != null) ? `<td>${x.noti ?? '—'}</td>` : ''}
-        <td>${x.i === 0 && x.n > 8 ? '' : Array.from({length: Math.min(12, x.n + x.dom)}, (_, k) => `<input type="checkbox" data-pgs="${x.i}" data-n="${k + 1}" data-pid="${esc(id)}" ${(sl[x.i] || 0) > k ? 'checked' : ''} ${dis} aria-label="Incantesimo di ${x.i}º livello ${k + 1} lanciato">`).join('')}</td>
-        <td>${pgTa(id, 'spellTxt.' + x.i, (d.spellTxt || {})[x.i], dis, 1)}</td></tr>`).filter(Boolean).join('')}</tbody></table>
-      <p class="muted" style="font-size:14px">Il numero al giorno include gli incantesimi bonus della ${PCARN[m.car]}${c.cast.dom ? ' e lo slot di dominio (+1)' : ''}. Serve almeno ${PCARN[m.car]} 10 + livello dell'incantesimo per lanciarlo.</p></div>`;
+      <table class="pgt" style="margin-top:10px"><thead><tr><th>Livello</th><th>Al giorno</th><th>CD</th>${hasN ? '<th>Conosciuti</th>' : ''}<th>Spesi</th><th>Incantesimi</th></tr></thead><tbody>
+      ${m.lv.map(x => x && `<tr><td>${x.i}º</td><td><b>${x.n}${x.dom ? ' + 1' : ''}</b></td><td>${x.cd}</td>${hasN ? `<td>${x.noti ?? '—'}</td>` : ''}
+        <td>${Array.from({length: Math.min(12, x.n + x.dom)}, (_, k) => `<input type="checkbox" data-pgsc="${esc(m.cl)}" data-i="${x.i}" data-n="${k + 1}" data-pid="${esc(id)}" ${(sl[x.i] || 0) > k ? 'checked' : ''} ${dis} aria-label="Incantesimo di ${x.i}º livello ${k + 1} lanciato">`).join('')}</td>
+        <td>${pgTa(id, 'spellTxt.' + (R.magie.length > 1 ? m.cl + '_' : '') + x.i, (d.spellTxt || {})[(R.magie.length > 1 ? m.cl + '_' : '') + x.i], dis, 1)}</td></tr>`).filter(Boolean).join('')}</tbody></table>
+      <p class="muted" style="font-size:14px">Il numero al giorno include gli incantesimi bonus della ${PCARN[m.car]}${m.dom ? ' e lo slot di dominio (+1)' : ''}. Serve almeno ${PCARN[m.car]} 10 + livello dell'incantesimo per lanciarlo.</p></div>`;
   }
   // privilegi e talenti
   const feat = [];
-  if (c) {
-    if ((c.col || []).length) feat.push(`<div class="pgstat" style="margin-bottom:10px">${c.col.map(([nm, v]) => `<div><span>${esc(nm)}</span><b>${esc(v[L - 1])}</b></div>`).join('')}</div>`);
-    feat.push(`<h4>${esc(d.classe)}</h4>` + c.f.filter(f => f[0] <= L).map(f => pgFeat(`c${f[0]}${f[1]}`, f[1], f[0], pgParas(f[2]))).join(''));
-    const next = c.f.filter(f => f[0] > L);
-    if (next.length) feat.push(`<p class="muted" style="font-size:14px">Prossimo privilegio: ${esc(next[0][1])} al ${next[0][0]}º livello.</p>`);
+  for (const x of R.cls) {
+    const col = (x.c.col || []);
+    feat.push(`<h4>${esc(x.n)} ${x.lv}</h4>` + (col.length ? `<div class="pgstat" style="margin-bottom:10px">${col.map(([nm, v]) => `<div><span>${esc(nm)}</span><b>${esc(v[x.lv - 1])}</b></div>`).join('')}</div>` : '')
+      + x.c.f.filter(f => f[0] <= x.lv).map(f => pgFeat(`c${x.n}${f[0]}${f[1]}`, f[1], f[0], pgParas(f[2]))).join(''));
+    const next = x.c.f.filter(f => f[0] > x.lv);
+    if (next.length) feat.push(`<p class="muted" style="font-size:14px">Prossimo privilegio da ${esc(x.n.toLowerCase())}: ${esc(next[0][1])} al ${next[0][0]}º livello da ${esc(x.n.toLowerCase())}.</p>`);
   }
   if (pgDoms(d).length) feat.push(`<h4>Domini</h4>` + pgDoms(d).map(x => pgFeat('d' + x, 'Dominio ' + x, null, pgParas(PGD.domini[x][0]))).join(''));
   if (sp) feat.push(`<h4>${esc(d.specie)}</h4><p class="muted" style="font-size:14px;margin:0 0 6px">Taglia ${sp.taglia === 'P' ? 'Piccola' : 'Media'} · velocità ${String(sp.vel).replace('.', ',')} m</p>` + sp.t.map(t => pgFeat('r' + t[0], t[0], null, pgParas(t[1]))).join(''));
@@ -837,7 +887,7 @@ function pgSheetView(){
   feat.push(`<h4>Talenti (${tals.length}/${R.talN})</h4>${tals.map(t => pgFeat('t' + t, t, null, pgParas(PGD.talenti[t]) + (ed ? `<button class="sm" data-act="pgdelt" data-n="${esc(t)}">Togli</button>` : ''))).join('') || '<p class="muted" style="margin:0">Nessun talento scelto.</p>'}
     ${ed ? `<div style="margin-top:6px">${pgSel(id, '_addt', '', Object.keys(PGD.talenti).filter(t => !tals.includes(t)), 'Aggiungi un talento…', '')}</div>` : ''}
     <label>Altri talenti (non in elenco)</label>${pgTa(id, 'talTxt', d.talTxt, dis, 2)}`);
-  out += `<div class="card"><h3>Privilegi, tratti e talenti</h3><p class="muted" style="font-size:14px;margin-top:0">Talenti disponibili: uno al 1º livello e uno ogni 3 livelli${sp && sp.talExtra ? ', +1 umano' : ''}${c && c.talBonus ? ', più i talenti bonus di classe' : ''}.</p>${feat.join('')}</div>`;
+  out += `<div class="card"><h3>Privilegi, tratti e talenti</h3><p class="muted" style="font-size:14px;margin-top:0">Talenti disponibili: uno al 1º livello e uno ogni 3 livelli${sp && sp.talExtra ? ', +1 umano' : ''}${R.cls.some(x => x.c.talBonus) ? ', più i talenti bonus di classe' : ''}.</p>${feat.join('')}</div>`;
   out += `<div class="pg2"><div class="card"><h3>Equipaggiamento</h3><div class="pgmon">${['mr', 'ma', 'mo', 'mp'].map(k => `<div><label>${k}</label>${n('monete.' + k, (d.monete || {})[k])}</div>`).join('')}</div>
     <label>Oggetti</label>${pgTa(id, 'equip', d.equip, dis, 6)}<label>Lingue</label>${pgIn(id, 'lingue', d.lingue, dis)}
     <label>Usi giornalieri (ire, scacciare, musica bardica…)</label>${pgTa(id, 'usi', d.usi, dis, 2)}</div>
@@ -867,7 +917,7 @@ document.addEventListener('click', e => {
   if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
   else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
   else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
-  else if (a === 'pgrest') { const R = pgCalc(d); const cur = d.pfAtt === '' || d.pfAtt == null ? R.pf : Number(d.pfAtt); d.pfAtt = Math.min(R.pf, cur + R.L) >= R.pf ? '' : Math.min(R.pf, cur + R.L); d.danniNL = ''; d.slotUsati = []; toast('Riposo: incantesimi recuperati e ' + R.L + ' punti ferita curati'); }
+  else if (a === 'pgrest') { const R = pgCalc(d); const cur = d.pfAtt === '' || d.pfAtt == null ? R.pf : Number(d.pfAtt); d.pfAtt = Math.min(R.pf, cur + R.L) >= R.pf ? '' : Math.min(R.pf, cur + R.L); d.danniNL = ''; d.slotUsati = {}; toast('Riposo: incantesimi recuperati e ' + R.L + ' punti ferita curati'); }
   else if (a === 'pgdel') { if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma: elimina'; return; } delete S.pg[id]; S.db && S.db.doc(PGC + '/' + id).delete().catch(e => console.error(e)); location.hash = 'pg'; return; }
   pgSave(id); render();
 });
