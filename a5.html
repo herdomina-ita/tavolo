@@ -579,7 +579,22 @@ const pgNew = (eroe) => ({eroe, giocatore:'', classe:'', specie:'', scelte:{}, b
   armi:[], monete:{mr:0, ma:0, me:0, mo:0, mp:0}, equip:'', tal:[], lingue:'', strumenti:'', usi:'',
   tratti:'', ideali:'', legami:'', difetti:'', aspetto:'', storia:'', spell:[], slotUsati:[], liv:1});
 const pgCanEd = id => !!(S.pgOff || S.pgOwner || (S.uid && id === S.uid));
-const pgHero = d => S.eroi.find(e => e.nome === d.eroe) || (d.legame ? S.eroi.find(e => e.nome === d.legame) : null);
+const pgHeroN = d => S.eroi.find(e => e.nome === d.eroe) || (d.legame ? S.eroi.find(e => e.nome === d.legame) : null);
+const pgHero = d => (d.hid && S.eroi.find(e => e.id === d.hid)) || pgHeroN(d);
+// collegamento fisso scheda ↔ eroe del gruppo (non dipende dal nome)
+function pgLink(){
+  if (!S.pg || !Array.isArray(S.eroi)) return; const M = S.pgOwner || S.pgOff; let g = false, ch = false;
+  for (const k of Object.keys(S.pg)) { const d = S.pg[k]; if (!d || pgBusy(k)) continue;
+    let h = d.hid ? S.eroi.find(e => e.id === d.hid) : null;
+    if (!h) { h = pgHeroN(d); if (!h) continue; if (!h.id) { if (!M) continue; h.id = 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); g = true; } }
+    if (!h.nome || !pgCanEd(k)) continue;
+    if (d.hid !== h.id || d.hnome !== h.nome) {
+      if (d.hnome && d.hnome !== h.nome && d.eroe === d.hnome) d.eroe = h.nome;
+      d.hid = h.id; d.hnome = h.nome; d.legame = h.nome; pgSave(k); ch = true; }
+  }
+  if (g) saveGroup(); if (ch && (S.view === 'pg' || S.view === 'pgscheda') && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.pid)) render();
+}
+setInterval(() => { try { pgLink(); } catch (e) { console.error(e); } }, 1500);
 const pgLv = d => { const h = pgHero(d); return h ? livello(h.pe) : (Number(d.liv) || 1); };
 const pgSpe = d => PGD.specie[d.specie] || null;
 const pgBg = d => PGD.bg[d.bg] || null;
@@ -737,7 +752,8 @@ function pgSet(id, path, val){
 
 const pgIsM = k => !!(S.pg[k] && (S.pg[k].master || /^m[0-9a-z]{6,10}$/.test(k)));
 function pgFor(nome){
-  const ks = Object.keys(S.pg).filter(k => S.pg[k].eroe === nome || S.pg[k].legame === nome);
+  const h = S.eroi.find(e => e.nome === nome);
+  const ks = Object.keys(S.pg).filter(k => { const d = S.pg[k]; if (d.hid && S.eroi.some(e => e.id === d.hid)) return !!(h && h.id === d.hid); return d.eroe === nome || d.legame === nome; });
   return ks.find(k => !pgIsM(k)) || ks[0] || null;
 }
 function pgListView(){
@@ -796,7 +812,7 @@ function pgRename(id){
   if (n === d.eroe) { S.pgRen = null; render(); return; }
   const h = pgHero(d);
   if (Object.keys(S.pg).some(k => k !== id && S.pg[k].eroe === n) || S.eroi.some(e => e.nome === n && e !== h)) { toast('Esiste già un eroe con questo nome'); return; }
-  if (h) { if (S.pgOwner || S.pgOff) { Object.values(S.pg).forEach(x => { if (x !== d && x.legame === h.nome) x.legame = n; }); h.nome = n; d.legame = n; saveGroup(); } else if (!d.legame) d.legame = h.nome; }
+  if (h) { if (S.pgOwner || S.pgOff) { Object.values(S.pg).forEach(x => { if (x !== d && x.legame === h.nome) x.legame = n; }); h.nome = n; d.legame = n; d.hnome = n; if (h.id) d.hid = h.id; saveGroup(); } else if (!d.legame) d.legame = h.nome; }
   d.eroe = n; S.pgRen = null; pgSave(id); const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); toast('Nome cambiato: ' + n);
 }
 const pgIn = (id, path, val, dis, extra = '') => `<input id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" value="${esc(val ?? '')}" ${dis} ${extra}>`;
@@ -1033,7 +1049,7 @@ document.addEventListener('change', async e => { const t = e.target; if (t.datas
     try { const j = JSON.parse(await f.text()); if (!j || j.tavolo !== 'scheda' || !j.scheda || typeof j.scheda !== 'object') throw new Error('formato');
       if (j.ed !== PGD.ed) { toast(`Questa scheda è della ${j.ed}: importala nella Sala d'Armi ${j.ed}`); return; }
       const cur = S.pg[id], h = pgHero(cur), nd = {...pgNew(cur.eroe), ...j.scheda}; delete nd.master; if (cur.master) nd.master = true;
-      if (h) nd.legame = h.nome; S.pg[id] = nd; pgSave(id); const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); toast('Scheda importata'); } catch (err) { console.error(err); toast('File non valido: usa un file creato con «Esporta scheda»'); } return; } if (t.dataset && t.dataset.pid && (t.tagName === 'SELECT' || t.type === 'checkbox')) pgInput(t, false); else if (t.dataset && t.dataset.pid && t.dataset.pg && t.dataset.pg[0] !== '_') { clearTimeout(S.rt); render(); } if (t.dataset && t.dataset.pglink) { const k = t.dataset.pglink; if (t.value && S.pg[k] && pgCanEd(k)) { S.pg[k].eroe = t.value; pgSave(k); render(); } } });
+      if (h) { nd.legame = h.nome; nd.hnome = h.nome; if (h.id) nd.hid = h.id; else delete nd.hid; } S.pg[id] = nd; pgSave(id); const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); toast('Scheda importata'); } catch (err) { console.error(err); toast('File non valido: usa un file creato con «Esporta scheda»'); } return; } if (t.dataset && t.dataset.pid && (t.tagName === 'SELECT' || t.type === 'checkbox')) pgInput(t, false); else if (t.dataset && t.dataset.pid && t.dataset.pg && t.dataset.pg[0] !== '_') { clearTimeout(S.rt); render(); } if (t.dataset && t.dataset.pglink) { const k = t.dataset.pglink; if (t.value && S.pg[k] && pgCanEd(k)) { S.pg[k].eroe = t.value; pgSave(k); render(); } } });
 (async () => {
   try {
     const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
