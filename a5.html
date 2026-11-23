@@ -753,7 +753,7 @@ function pgListView(){
     else if (mine) act = '';
     else act = `<button class="pri" data-act="pgmine" data-eroe="${esc(e.nome)}">È il mio eroe: crea la scheda</button>`;
     const sum = d ? [d.specie, pgClassi(d).map(x => x.n + ' ' + x.lv).join(' / '), d.giocatore && `giocatore: ${d.giocatore}`].filter(Boolean).map(esc).join(' · ') : 'Nessuna scheda';
-    return `<div class="pgrow"><div><b>${esc(e.nome)}</b><span class="muted"> · livello ${L}</span>${id && id === mine ? ' <span class="tag">la tua</span>' : ''}<div class="muted" style="font-size:14px">${sum || 'Scheda da compilare'}</div></div><div class="row">${act}</div></div>`;
+    return `<div class="pgrow"><div style="display:flex;align-items:center">${d && d.foto ? `<img class="pgav" src="${esc(d.foto)}" alt="">` : ''}<div><b>${esc(e.nome)}</b><span class="muted"> · livello ${L}</span>${id && id === mine ? ' <span class="tag">la tua</span>' : ''}<div class="muted" style="font-size:14px">${sum || 'Scheda da compilare'}</div></div></div><div class="row">${act}</div></div>`;
   }).join('');
   const fuori = Object.keys(S.pg).filter(k => !pgHero(S.pg[k]));
   const superate = master ? Object.keys(S.pg).filter(k => pgHero(S.pg[k]) && pgIsM(k) && pgFor(S.pg[k].eroe) !== k) : [];
@@ -775,6 +775,18 @@ const pgId = (id, path) => ('pg-' + id + '-' + path).replace(/[^\w-]/g, '_');
 function pgSel(id, path, val, opts, ph, dis){
   return `<select id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" ${dis}>${ph != null ? `<option value="">${esc(ph)}</option>` : ''}${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(val ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
 }
+const pgFoto = (id, d, ed) => `<div class="pgfoto">${d.foto ? `<img src="${esc(d.foto)}" alt="Ritratto di ${esc(d.eroe || 'eroe')}">` : `<div class="pgfotov" aria-hidden="true">${esc((d.eroe || '?').trim().charAt(0).toUpperCase())}</div>`}${ed ? `<div class="pgfotob"><label class="btnl sm">${d.foto ? 'Cambia' : '📷 Immagine'}<input type="file" accept="image/*" data-pgfoto="${esc(id)}" hidden></label>${d.foto ? `<button class="sm" data-act="pgfotodel" data-k="${esc(id)}" title="Togli l'immagine">✕</button>` : ''}</div>` : ''}</div>`;
+function pgFotoLoad(file){
+  return new Promise((ok, ko) => { const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { try { let q = 0.85, max = 520, out = '';
+      for (let i = 0; i < 6; i++) { const k = Math.min(1, max / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+        const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height); out = cv.toDataURL('image/jpeg', q);
+        if (out.length < 140000) break; q -= 0.1; max = Math.round(max * 0.8); }
+      URL.revokeObjectURL(u); ok(out); } catch (e) { ko(e); } };
+    im.onerror = () => { URL.revokeObjectURL(u); ko(new Error('img')); }; im.src = u; });
+}
+if (!document.getElementById('pgfoto-css')) document.head.insertAdjacentHTML('beforeend', `<style id="pgfoto-css">.pgtop{display:flex;gap:16px;align-items:flex-start}.pgfoto{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px}.pgfoto img,.pgfotov{width:112px;height:140px;border-radius:12px;object-fit:cover;border:1px solid rgba(0,0,0,.15);display:block}.pgfoto img{cursor:zoom-in}.pgfotov{display:flex;align-items:center;justify-content:center;font-size:44px;font-family:Georgia,serif;opacity:.45;background:rgba(0,0,0,.05)}.pgfotob{display:flex;gap:4px;align-items:center}.pgfotob label{cursor:pointer;font-size:13px;padding:4px 10px}.pgav{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:0 0 auto;margin-right:10px;border:1px solid rgba(0,0,0,.12)}.pgzoom{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out}.pgzoom img{max-width:92vw;max-height:92vh;border-radius:12px}@media(max-width:560px){.pgfoto img,.pgfotov{width:84px;height:105px}}<\/style>`);
+document.addEventListener('click', e => { const i = e.target.closest && e.target.closest('.pgfoto img'); if (i) { const z = document.createElement('div'); z.className = 'pgzoom'; z.innerHTML = `<img src="${i.src}" alt="">`; z.onclick = () => z.remove(); document.body.appendChild(z); } });
 const pgNameBox = (id, d, ed) => S.pgRen === id && ed
   ? `<div class="row" style="margin-top:6px"><input id="pgren-${esc(id)}" class="pgren" data-renk="${esc(id)}" value="${esc(d.eroe || '')}" aria-label="Nuovo nome dell'eroe" style="max-width:260px;font-size:18px"><button class="pri" data-act="pgrensave" data-k="${esc(id)}">Salva il nome</button><button data-act="pgrenno">Annulla</button></div>`
   : `<div class="row" style="margin-top:6px;align-items:center"><h2 style="margin:0">${esc(d.eroe || 'Senza nome')}</h2>${ed ? `<button class="sm" data-act="pgren" data-k="${esc(id)}" title="Cambia il nome dell'eroe">✎ Cambia nome</button>` : ''}</div>`;
@@ -809,8 +821,8 @@ function pgSheetView(){
   const clsTxt = R.cls.map(x => `${x.n} ${x.lv}`).join(' / ');
   const h = pgHero(d);
   // intestazione
-  let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div><a class="lnk" href="#pg">← Schede personaggi</a>${pgNameBox(id, d, ed)}
-    <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${clsTxt} (${L}º livello)`].filter(Boolean).join(' · ') || 'Scegli specie e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div>
+  let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div class="pgtop">${pgFoto(id, d, ed)}<div><a class="lnk" href="#pg">← Schede personaggi</a>${pgNameBox(id, d, ed)}
+    <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${clsTxt} (${L}º livello)`].filter(Boolean).join(' · ') || 'Scegli specie e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div></div>
     <div class="row"><button data-act="pgcalc">↻ Ricalcola tutto</button>${ed ? `<button data-act="pgrest" data-k="breve">Riposo breve</button><button data-act="pgrest" data-k="lungo">Riposo lungo</button>` : '<span class="tag">Sola lettura</span>'}</div></div>
     <div class="pgg4" style="margin-top:12px">
       <div><label>Classe al 1º livello</label>${pgSel(id, 'prog.0.c', R.prog[0] && R.prog[0].c, Object.keys(PGD.classi), '— scegli —', dis)}</div>
@@ -964,6 +976,7 @@ document.addEventListener('click', e => {
   if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
   if (a === 'pgall35') { S.pgAll35 = t.checked; render(); return; }
   if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
+  if (a === 'pgfotodel') { const x = S.pg[t.dataset.k]; if (x && pgCanEd(t.dataset.k)) { x.foto = ''; pgSave(t.dataset.k); render(); toast('Immagine tolta'); } return; }
   if (a === 'pgren') { S.pgRen = t.dataset.k; render(); setTimeout(() => { const i = document.getElementById('pgren-' + t.dataset.k); if (i) { i.focus(); i.select(); } }, 0); return; }
   if (a === 'pgrenno') { S.pgRen = null; const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); return; }
   if (a === 'pgrensave') { pgRename(t.dataset.k); return; }
@@ -1016,7 +1029,7 @@ function pgInput(t, live){
   if (live && t.getAttribute('inputmode') !== 'numeric') { clearTimeout(S.rt); S.rt = setTimeout(render, 400); } else { clearTimeout(S.rt); render(); }
 }
 document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.pid && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && t.type !== 'checkbox'))) pgInput(t, true); });
-document.addEventListener('change', async e => { const t = e.target; if (t.dataset && t.dataset.pgimp) { const id = t.dataset.pgimp, f = t.files && t.files[0]; t.value = ''; if (!f || !S.pg[id] || !pgCanEd(id)) return;
+document.addEventListener('change', async e => { const t = e.target; if (t.dataset && t.dataset.pgfoto) { const id = t.dataset.pgfoto, f = t.files && t.files[0]; t.value = ''; if (!f || !S.pg[id] || !pgCanEd(id)) return; try { S.pg[id].foto = await pgFotoLoad(f); pgSave(id); render(); toast('Immagine caricata'); } catch (err) { toast('Questo file non è un\'immagine valida'); } return; } if (t.dataset && t.dataset.pgimp) { const id = t.dataset.pgimp, f = t.files && t.files[0]; t.value = ''; if (!f || !S.pg[id] || !pgCanEd(id)) return;
     try { const j = JSON.parse(await f.text()); if (!j || j.tavolo !== 'scheda' || !j.scheda || typeof j.scheda !== 'object') throw new Error('formato');
       if (j.ed !== PGD.ed) { toast(`Questa scheda è della ${j.ed}: importala nella Sala d'Armi ${j.ed}`); return; }
       const cur = S.pg[id], h = pgHero(cur), nd = {...pgNew(cur.eroe), ...j.scheda}; delete nd.master; if (cur.master) nd.master = true;
