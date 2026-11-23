@@ -560,7 +560,7 @@ const pgNew = (eroe) => ({eroe, giocatore:'', classe:'', prog:[], specie:'', all
   tsMisc:{f:0, r:0, v:0}, pfAgg:0, pfAtt:'', pfTemp:'', danniNL:'', armi:[], monete:{mr:0, ma:0, mo:0, mp:0}, equip:'', tal:[], talTxt:'',
   lingue:'', usi:'', spellTxt:{}, slotUsati:{}, aspetto:'', storia:'', personalita:'', liv:1});
 const pgCanEd = id => !!(S.pgOff || S.pgOwner || (S.uid && id === S.uid));
-const pgHero = d => S.eroi.find(e => e.nome === d.eroe);
+const pgHero = d => S.eroi.find(e => e.nome === d.eroe) || (d.legame ? S.eroi.find(e => e.nome === d.legame) : null);
 const pgLv = d => { const h = pgHero(d); return h ? livello(h.pe) : (Number(d.liv) || 1); };
 const pgSpe = d => PGD.specie[d.specie] || null;
 const pgHas = (d, t) => (d.tal || []).includes(t);
@@ -731,7 +731,7 @@ function pgSet(id, path, val){
 
 const pgIsM = k => !!(S.pg[k] && (S.pg[k].master || /^m[0-9a-z]{6,10}$/.test(k)));
 function pgFor(nome){
-  const ks = Object.keys(S.pg).filter(k => S.pg[k].eroe === nome);
+  const ks = Object.keys(S.pg).filter(k => S.pg[k].eroe === nome || S.pg[k].legame === nome);
   return ks.find(k => !pgIsM(k)) || ks[0] || null;
 }
 function pgListView(){
@@ -976,6 +976,7 @@ function pgInput(t, live){
   const id = t.dataset.pid, d = S.pg[id]; if (!d || !pgCanEd(id)) return;
   if (t.dataset.pgm != null) { const k = Number(t.dataset.pgm), n = Number(t.dataset.n); d.morte[k] = t.checked ? n : n - 1; pgSave(id); render(); return; }
   if (t.dataset.pgs != null) { const k = Number(t.dataset.pgs), n = Number(t.dataset.n); d.slotUsati = d.slotUsati || []; d.slotUsati[k] = t.checked ? n : n - 1; for (let i = 0; i < k; i++) if (d.slotUsati[i] == null) d.slotUsati[i] = 0; pgSave(id); render(); return; }
+  if (t.dataset.pgsc != null) { const cl = t.dataset.pgsc, k = Number(t.dataset.i), n = Number(t.dataset.n); if (!d.slotUsati || Array.isArray(d.slotUsati)) d.slotUsati = {}; const a = (d.slotUsati[cl] = d.slotUsati[cl] || []); a[k] = t.checked ? n : n - 1; for (let i = 0; i < k; i++) if (a[i] == null) a[i] = 0; pgSave(id); render(); return; }
   if (t.dataset.pgab != null) { const a = d.armi[Number(t.dataset.pgab)]; a.bonus = Number(String(t.value).replace(/[^\d-]/g, '')) || 0; pgSave(id); if (!live) render(); else { clearTimeout(S.rt); render(); } return; }
   if (t.dataset.pga != null) { d.armi[Number(t.dataset.pga)].prof = t.checked; pgSave(id); render(); return; }
   const p = t.dataset.pg; if (!p) return;
@@ -987,6 +988,7 @@ function pgInput(t, live){
   if (p === '_addt') { if (t.value) { d.tal = d.tal || []; d.tal.push(t.value); pgSave(id); } render(); return; }
   let v = t.type === 'checkbox' ? t.checked : t.value;
   if (t.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+  if (p === 'eroe') { const h = pgHero(d); if (h) { if (S.pgOwner || S.pgOff) { h.nome = v; d.legame = v; saveGroup(); } else if (!d.legame) d.legame = h.nome; } }
   if (p === 'metodo' && v === 'array') d.base = {for: 15, des: 14, cos: 13, int: 12, sag: 10, car: 8};
   if (p === 'metodo' && v === 'punti') d.base = {for: 8, des: 8, cos: 8, int: 8, sag: 8, car: 8};
   if (p.startsWith('base.') && d.metodo === 'array') { const a = p.slice(5), old = Number(d.base[a]), nv = Number(v), o = PCARK.find(k => k !== a && Number(d.base[k]) === nv); if (o) d.base[o] = old; }
