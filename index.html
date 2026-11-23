@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il tavolo del Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: il tavolo del Master, sobrio e caldo, come le sue tre app.
+   IDEA: tre sale d'armi, una per edizione; ognuno apre la sua edizione.
+   PICTURE: un d20 dorato con il numero dell'edizione.
+   COLOUR and TYPE: pergamena, ruggine e ottone delle app; Alegreya SC + Alegreya Sans.
+   LAYOUT: titolo breve, poi i tre tomi affiancati che diventano una colonna sul telefono. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ece7de,#171513);--card:light-dark(#fbf8f2,#221f1b);--ink:light-dark(#221d17,#ece4d6);--soft:light-dark(#6c6355,#a99f8f);
+--line:light-dark(#d6cdbd,#3a342c);--brace:light-dark(#c4521f,#f08a4b);--ottone:light-dark(#9a7426,#d9b25a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Alegreya Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2{font-family:"Alegreya SC",Georgia,serif;line-height:1.05;margin:0;text-wrap:balance}
+.band{padding:clamp(28px,5vw,64px) max(5vw,16px);max-width:1240px;margin:0 auto}
+header{border-bottom:2px solid var(--brace);padding-bottom:18px;margin-bottom:clamp(22px,4vw,40px)}
+h1{font-size:clamp(34px,5vw,52px)}
+header p{margin:8px 0 0;color:var(--soft);max-width:60ch}
+.shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2.5vw,28px);align-items:stretch}
+.tome{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;color:inherit;text-decoration:none;transition:transform .25s ease, box-shadow .25s ease}
+.tome:hover{transform:translateY(-4px);box-shadow:0 14px 28px -16px rgba(60,30,10,.45)}
+.tome:focus-visible{outline:3px solid var(--brace);outline-offset:3px}
+.cover{position:relative;aspect-ratio:4/3;display:grid;place-items:center}
+.cover svg{width:min(62%,190px);height:auto}
+.c35{background:radial-gradient(circle at 50% 35%,#6b2a17,#2b130c)}
+.c5{background:radial-gradient(circle at 50% 35%,#2f4a5a,#121c24)}
+.c55{background:radial-gradient(circle at 50% 35%,#4b3a69,#1b1527)}
+.ed{position:absolute;left:14px;top:12px;font:700 13px/1 "Alegreya Sans",sans-serif;color:#f3e3c1;background:rgba(0,0,0,.35);padding:6px 9px;border-radius:999px}
+.body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+h2{font-size:clamp(24px,2.6vw,30px)}
+.body p{margin:0;color:var(--soft)}
+.facts{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.facts li{font-size:14px;background:light-dark(#e6dfd2,#2c2823);border-radius:999px;padding:3px 10px}
+.go{margin-top:auto;padding-top:12px}
+.go span{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:9px;background:var(--brace);color:#fff6ee;font-weight:700}
+.note{margin-top:clamp(22px,4vw,36px);font-size:15px;color:var(--soft);max-width:70ch}
+@media(max-width:820px){.shelf{grid-template-columns:minmax(0,1fr)}.cover{aspect-ratio:16/7}.cover svg{width:min(34%,150px)}}
+@media(prefers-reduced-motion:reduce){.tome{transition:none}.tome:hover{transform:none}}
+header .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.mbtn{min-height:44px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:inherit;font:700 16px "Alegreya Sans",sans-serif;cursor:pointer}
+.mbtn:hover{border-color:var(--brace)}.mbtn.on{background:var(--brace);border-color:var(--brace);color:#fff6ee}
+.mbtn:focus-visible,.dlg button:focus-visible,.dlg input:focus-visible{outline:2px solid var(--brace);outline-offset:2px}
+.veil{position:fixed;inset:0;background:rgba(20,12,6,.55);display:grid;place-items:center;padding:16px;z-index:9}
+.veil[hidden]{display:none}
+.dlg{background:var(--card);color:var(--ink);border-radius:14px;padding:22px;width:min(420px,100%);box-shadow:0 20px 40px -20px rgba(0,0,0,.5)}
+.dlg h2{font-size:26px;margin-bottom:6px}.dlg p{margin:0 0 12px;color:var(--soft)}
+.dlg label{display:block;font-weight:500;margin-bottom:4px}
+.dlg input{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit}
+.dlg .row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.dlg button{min-height:44px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:inherit;font:inherit;cursor:pointer}
+.dlg button.pri{background:var(--brace);border-color:var(--brace);color:#fff6ee;font-weight:700}
+.err{color:#b3261e;min-height:1.2em;margin:6px 0 0 !important}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.carico{padding:40px;text-align:center;color:var(--soft)}
+.login{position:fixed;inset:0;z-index:999;background:#171513;color:#ece4d6;display:flex;align-items:center;justify-content:center;padding:24px}.login[hidden]{display:none}
+.lbox{max-width:420px;text-align:center}.lbox h1{font-size:30px;margin:12px 0 8px}.lbox p{color:#a99f8f;line-height:1.5}.lbox button{min-height:48px;padding:0 22px;border-radius:10px;border:0;background:#f08a4b;color:#1b130d;font-weight:700;font-size:17px;cursor:pointer}
+.lbox .err{color:#f08a4b;min-height:1.4em}.chi{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:15px}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c4521f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* Tavolo del Master: dati su Firebase (Firestore) con accesso Google. */
+window.TAVOLO = (() => {
+  const MASTER = "herdomina@gmail.com";
+  let ok = typeof firebase !== 'undefined';
+  if (!ok) return {ok: false};
+  firebase.initializeApp({"apiKey": "AIzaSyCvLT1urM5S8Q78ifllzFRJ37DST02wQOs", "authDomain": "tavolo-del-master.firebaseapp.com", "projectId": "tavolo-del-master", "storageBucket": "tavolo-del-master.firebasestorage.app", "messagingSenderId": "969908519696", "appId": "1:969908519696:web:04c771a8d4867bd84f9b95"});
+  const fdb = firebase.firestore();
+  try { fdb.enablePersistence({synchronizeTabs: true}).catch(() => {}); } catch (_) {}
+  const auth = firebase.auth();
+  const map = e => { if (e && e.code === 'permission-denied') { const x = new Error(e.message); x.code = 'invalid_argument'; return x; } return e; };
+  const doc = p => { const r = fdb.doc(p); return {
+    set: v => r.set(v).catch(e => { throw map(e); }),
+    update: v => r.update(v).catch(e => { throw map(e); }),
+    delete: () => r.delete().catch(e => { throw map(e); }),
+    get: () => r.get(),
+    onSnapshot: (f, err) => r.onSnapshot(f, err) }; };
+  const db = { doc, collection: c => ({ doc: id => doc(c + '/' + id), onSnapshot: (f, err) => fdb.collection(c).onSnapshot(f, err), get: () => fdb.collection(c).get() }) };
+  const isM = u => !!(u && u.email && u.email.toLowerCase() === MASTER);
+  let pronto; const utente = new Promise(r => pronto = r);
+  auth.onAuthStateChanged(u => {
+    if (u) { try { if (isM(u)) sessionStorage.setItem('tavolo-master', '1'); else sessionStorage.removeItem('tavolo-master'); } catch (_) {} pronto(u); }
+    window.dispatchEvent(new CustomEvent('tavolo-auth', {detail: u}));
+  });
+  window.claude = { use: async n => { const u = await utente; return n === 'db' ? db : n === 'user' ? { isOwner: () => isM(u), canEdit: () => isM(u), can: () => isM(u), id: async () => u.uid, me: async () => ({id: u.uid, name: u.displayName || ''}) } : null; } };
+  const accedi = async () => { const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({prompt: 'select_account'}); try { await auth.signInWithPopup(p); } catch (e) { if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) await auth.signInWithRedirect(p); else throw e; } };
+  return {ok: true, auth, accedi, esci: () => auth.signOut().then(() => { try { sessionStorage.clear(); } catch (_) {} location.reload(); }), isM};
+})();
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.error(e)));
+</script>
+</head>
+<body>
+<main class="band">
+  <header>
+    <div class="top"><h1>Il tavolo del Master</h1><button class="mbtn" id="mbtn" type="button">Master</button></div>
+    <p>Scegli l'edizione che giochi stasera: si apre la sua sala, con gruppo, generatore di incontri e bestiario. Dalla sala torni qui con «← Menu».</p>
+  </header>
+
+  <nav class="shelf" aria-label="Scegli l'edizione">
+    <a class="tome" href="#" data-ed="35">
+      <div class="cover c35"><span class="ed">Edizione 3.5</span>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><g fill="rgba(217,178,90,.12)" stroke="#d9b25a" stroke-width="3.5" stroke-linejoin="round">
+          <path d="M60 8 L105 34 V86 L60 112 L15 86 V34 Z"/>
+          <path d="M60 30 L88 78 H32 Z" fill="rgba(217,178,90,.2)"/></g>
+          <g fill="none" stroke="#d9b25a" stroke-width="3" stroke-linejoin="round"><path d="M60 8 L60 30 M105 34 L60 30 L15 34 M105 34 L88 78 L105 86 M15 34 L32 78 L15 86 M32 78 L60 112 L88 78"/></g>
+          <text x="60" y="69" text-anchor="middle" font-family="Alegreya SC,Georgia,serif" font-weight="700" font-size="17" fill="#f3e3c1">3.5</text></svg></div>
+      <div class="body"><h2>Sala d'Armi 3.5</h2>
+        <p>Incontri per la 3.5: Livello di Incontro calcolato dal GS e dal livello del gruppo.</p>
+        <ul class="facts"><li>332 creature</li><li>Livello di Incontro</li><li>Filtro per ambiente</li></ul>
+        <div class="go"><span>Apri la Sala d'Armi 3.5</span></div></div>
+    </a>
+
+    <a class="tome" href="#" data-ed="5">
+      <div class="cover c5"><span class="ed">Quinta edizione · 2014</span>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><g fill="rgba(217,178,90,.12)" stroke="#d9b25a" stroke-width="3.5" stroke-linejoin="round">
+          <path d="M60 8 L105 34 V86 L60 112 L15 86 V34 Z"/>
+          <path d="M60 30 L88 78 H32 Z" fill="rgba(217,178,90,.2)"/></g>
+          <g fill="none" stroke="#d9b25a" stroke-width="3" stroke-linejoin="round"><path d="M60 8 L60 30 M105 34 L60 30 L15 34 M105 34 L88 78 L105 86 M15 34 L32 78 L15 86 M32 78 L60 112 L88 78"/></g>
+          <text x="60" y="69" text-anchor="middle" font-family="Alegreya SC,Georgia,serif" font-weight="700" font-size="24" fill="#f3e3c1">5</text></svg></div>
+      <div class="body"><h2>Sala d'Armi 5</h2>
+        <p>Regole 2014: soglie di PE del gruppo e moltiplicatore per il numero di mostri.</p>
+        <ul class="facts"><li>317 creature</li><li>Facile · Media · Difficile · Mortale</li></ul>
+        <div class="go"><span>Apri la Sala d'Armi 5</span></div></div>
+    </a>
+
+    <a class="tome" href="#" data-ed="55">
+      <div class="cover c55"><span class="ed">Quinta edizione · 2024</span>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><g fill="rgba(217,178,90,.12)" stroke="#d9b25a" stroke-width="3.5" stroke-linejoin="round">
+          <path d="M60 8 L105 34 V86 L60 112 L15 86 V34 Z"/>
+          <path d="M60 30 L88 78 H32 Z" fill="rgba(217,178,90,.2)"/></g>
+          <g fill="none" stroke="#d9b25a" stroke-width="3" stroke-linejoin="round"><path d="M60 8 L60 30 M105 34 L60 30 L15 34 M105 34 L88 78 L105 86 M15 34 L32 78 L15 86 M32 78 L60 112 L88 78"/></g>
+          <text x="60" y="69" text-anchor="middle" font-family="Alegreya SC,Georgia,serif" font-weight="700" font-size="17" fill="#f3e3c1">5.5</text></svg></div>
+      <div class="body"><h2>Sala d'Armi 5.5</h2>
+        <p>Regole 2024: budget di PE per personaggio, senza moltiplicatori. Schede in italiano ufficiale.</p>
+        <ul class="facts"><li>330 creature</li><li>Facile · Media · Difficile</li></ul>
+        <div class="go"><span>Apri la Sala d'Armi 5.5</span></div></div>
+    </a>
+  </nav>
+
+  <p class="note" id="stato">Ognuno entra con il proprio account Google: i giocatori consultano tutto e compilano la propria scheda personaggio; il Master modifica gruppo, PE, incontri e immagini.</p>
+</main>
+<div class="veil" id="veil" hidden><form class="dlg" id="mform" role="dialog" aria-modal="true" aria-labelledby="mt">
+  <h2 id="mt">Modalità Master</h2><p>Un solo accesso per modificare tutte e tre le sale d'armi.</p>
+  <label for="mpw">Password</label><input id="mpw" type="password" autocomplete="current-password" required>
+  <p class="err" id="pwerr" aria-live="polite"></p>
+  <div class="row"><button class="pri" type="submit">Entra</button><button type="button" id="mclose">Annulla</button></div></form></div>
+<div class="toast" id="toast"></div>
+<div id="login" class="login" hidden><div class="lbox">
+  <svg viewBox="0 0 120 120" width="88" height="88" aria-hidden="true"><g fill="rgba(240,138,75,.15)" stroke="#f08a4b" stroke-width="3.5" stroke-linejoin="round"><path d="M60 8 L105 34 V86 L60 112 L15 86 V34 Z"/><path d="M60 30 L88 78 H32 Z"/></g><text x="60" y="69" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="20" fill="#f3e3c1">20</text></svg>
+  <h1>Il tavolo del Master</h1><p id="lmsg">Accedi con il tuo account Google per vedere il gruppo e compilare la tua scheda.</p>
+  <button type="button" class="pri" id="lgo">Accedi con Google</button><p class="err" id="lerr" aria-live="polite"></p></div></div>
+<script>
+(() => {
+  const L = document.getElementById('login'), T = window.TAVOLO;
+  document.documentElement.appendChild(L);
+  const show = (m) => { L.hidden = false; if (m) document.getElementById('lmsg').textContent = m; };
+  if (!T || !T.ok) { show('Per il primo accesso serve internet. Controlla la connessione e ricarica la pagina.'); document.getElementById('lgo').hidden = true; return; }
+  window.addEventListener('tavolo-auth', e => {
+    const u = e.detail;
+    if (!u) { show(); return; }
+    L.hidden = true;
+    const st = document.getElementById('stato');
+    if (st && !document.getElementById('chi')) { const d = document.createElement('div'); d.className = 'chi'; d.id = 'chi'; d.innerHTML = '<span></span><button type="button" class="mbtn" id="esci">Esci</button>'; d.querySelector('span').textContent = 'Accesso: ' + (u.email || u.displayName || 'utente') + (T.isM(u) ? ' · Master' : ''); st.after(d); document.getElementById('esci').addEventListener('click', () => T.esci()); }
+  });
+  document.getElementById('lgo').addEventListener('click', async () => {
+    document.getElementById('lerr').textContent = '';
+    try { await T.accedi(); } catch (e) { console.error(e); document.getElementById('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'Questo indirizzo non è autorizzato in Firebase (Authentication › domini autorizzati).' : 'Accesso non riuscito: ' + ((e && e.code) || 'riprova'); }
+  });
+})();
+</script>
+
+<script>
+{
+const MHASH = 'a8cbcac0410cd8074f92bb7f98443ac92bc0a0665d0212aa9c619e62e607027c';
+const $ = s => document.querySelector(s);
+const ss = { get(k){ try { return sessionStorage.getItem(k); } catch(_) { return null; } }, set(k,v){ try { v==null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); } catch(_) {} } };
+let master = ss.get('tavolo-master') === '1', back = null;
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.k); toast.k = setTimeout(() => t.classList.remove('on'), 2200); }
+function paint(){ const b = $('#mbtn'); b.textContent = master ? 'Esci da Master' : 'Master'; b.classList.toggle('on', master); }
+async function sha(x){ const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(x)); return [...new Uint8Array(d)].map(v => v.toString(16).padStart(2,'0')).join(''); }
+function apri(){ back = document.activeElement; $('#pwerr').textContent = ''; $('#mpw').value = ''; $('#veil').hidden = false; $('#mpw').focus(); }
+function chiudi(){ $('#veil').hidden = true; if (back) back.focus(); }
+const ac = new AbortController();
+async function avvia(ed){
+  ac.abort();
+  ss.set('tavolo-ed', ed);
+  document.querySelector('main').innerHTML = '<p class="carico">Apro la sala…</p>';
+  try {
+    const html = await (await fetch('a' + ed + '.html', {cache: 'no-cache'})).text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    document.title = doc.title;
+    document.head.querySelectorAll('style').forEach(x => x.remove());
+    doc.head.querySelectorAll('style, link[rel=stylesheet]').forEach(x => document.head.appendChild(document.importNode(x, true)));
+    const scripts = [...doc.body.querySelectorAll('script')]; scripts.forEach(x => x.remove());
+    document.body.innerHTML = doc.body.innerHTML;
+    for (const x of scripts) { const n = document.createElement('script'); n.textContent = x.textContent; document.body.appendChild(n); }
+  } catch (e) { console.error(e); ss.set('tavolo-ed', null); document.querySelector('main') && (document.querySelector('main').innerHTML = '<p class="carico">Non riesco ad aprire la sala. Ricarica la pagina.</p>'); }
+}
+const ed = ss.get('tavolo-ed');
+if (ed && ['35','5','55'].includes(ed)) avvia(ed);
+else {
+  paint();
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-ed]');
+    if (t) { e.preventDefault(); avvia(t.dataset.ed); return; }
+    if (e.target.closest('#mbtn')) { if (master) { master = false; ss.set('tavolo-master', null); paint(); toast('Modalità visualizzazione'); } else apri(); return; }
+    if (e.target.id === 'mclose' || e.target.id === 'veil') chiudi();
+  }, {signal: ac.signal});
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#veil').hidden) chiudi(); }, {signal: ac.signal});
+  $('#mform').addEventListener('submit', async e => {
+    e.preventDefault(); let ok = false;
+    try { ok = (await sha($('#mpw').value)) === MHASH; } catch (err) { console.error(err); }
+    if (!ok) { $('#pwerr').textContent = 'Password errata.'; $('#mpw').select(); return; }
+    master = true; ss.set('tavolo-master', '1'); paint(); chiudi(); toast('Modalità Master attiva in tutte le sale');
+  });
+}
+}
+</script>
+</body>
+</html>

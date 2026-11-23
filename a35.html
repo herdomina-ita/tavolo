@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala d&#39;Armi 3.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un tavolo da guerra del Master, pratico e veloce, da usare mentre si gioca.
+   IDEA: il tabellone della sala d'armi: ferro, braci e gettoni di ottone sul tavolo.
+   PICTURE: l'incontro in costruzione, grande, con il suo LI e la barra della difficoltà.
+   COLOUR and TYPE: ferro scuro e osso, brace arancione per il pericolo; Alegreya SC per i titoli, Alegreya Sans per il resto.
+   LAYOUT: barra con le sezioni; a sinistra il lavoro (gruppo, generatore, bestiario), a destra l'incontro sempre visibile; una colonna sul telefono. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ece7de,#171513);--card:light-dark(#fbf8f2,#221f1b);--ink:light-dark(#221d17,#ece4d6);--soft:light-dark(#6c6355,#a99f8f);
+--line:light-dark(#d6cdbd,#3a342c);--brace:light-dark(#c4521f,#f08a4b);--ottone:light-dark(#9a7426,#d9b25a);--chip:light-dark(#e6dfd2,#2c2823)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Alegreya Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Alegreya SC",Georgia,serif;line-height:1.1;margin:0 0 .4em;text-wrap:balance}
+h2{font-size:clamp(24px,3vw,30px)}h3{font-size:19px}
+button,input,select,textarea{font:inherit;color:inherit}
+.schf label{display:block;margin:8px 0 3px}.schf textarea{font-family:inherit;resize:vertical}
+button{min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+button:hover{border-color:var(--brace)}
+button.pri{background:var(--brace);border-color:var(--brace);color:#fff6ee;font-weight:700}
+button.sm{min-height:36px;padding:0 10px;font-size:15px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brace);outline-offset:2px}
+input,select,textarea{font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%}
+label{font-size:14px;color:var(--soft);display:block;margin:6px 0 2px}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:3px solid var(--brace);padding:10px max(3vw,14px);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+header h1{font-size:22px;margin:0;color:var(--brace)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:9px 13px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:500}
+nav a.on{background:var(--chip);color:var(--brace)}
+.pl{margin-left:auto;font-size:15px;color:var(--soft)}.pl b{color:var(--ink);font-size:18px}
+main{max-width:1280px;margin:0 auto;padding:18px max(3vw,14px) 60px;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:920px){main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.muted{color:var(--soft)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:600px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;color:var(--soft);font-weight:500}
+td.n,th.n{text-align:right;white-space:nowrap}
+.scroll{overflow-x:auto}
+.side{position:sticky;top:78px}
+.el{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.el .big{font:700 clamp(54px,8vw,80px)/1 "Alegreya SC",serif;color:var(--brace)}
+.bar{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin:10px 0 4px}
+.bar i{height:10px;border-radius:3px;background:var(--chip)}
+.bar i.on{background:var(--brace)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:14px}
+.d0{background:#d8ead2;color:#244a1d}.d1{background:#d6e4f2;color:#1d3a5c}.d2{background:#f7e2bf;color:#6b4206}.d3{background:#f6cdbb;color:#7a240a}.d4{background:#3b1d14;color:#ffd6c4}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dotted var(--line)}
+.step{display:flex;align-items:center;gap:4px}.step button{min-height:34px;width:34px;padding:0}
+.step span{min-width:26px;text-align:center;font-weight:700}
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.cand{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.cand>b{display:block}.cand>a.lnk{font-weight:700}.cand .muted{font-size:14px}
+.hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 70px minmax(0,1fr) 44px;gap:8px;align-items:end;padding:6px 0;border-bottom:1px dotted var(--line)}
+@media(max-width:600px){.hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 60px 44px}.hero .mancano{display:none}}
+.lv{font:700 26px/1 "Alegreya SC",serif;text-align:center;color:var(--ottone)}
+.empty{padding:22px;text-align:center;color:var(--soft)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+@media(max-width:600px){table{font-size:14px}}
+.lnk{border:0;background:none;padding:0;min-height:30px;font-weight:700;color:inherit;text-align:left;text-decoration:underline dotted var(--soft);text-underline-offset:3px;cursor:pointer}
+.lnk:hover{color:var(--brace)}
+.ico{min-height:26px;width:26px;padding:0;margin-left:6px;border-radius:50%;font:700 italic 14px/1 Georgia,serif;color:var(--soft);vertical-align:1px}
+.ico:hover{color:var(--brace)}
+.seg{display:flex;gap:4px;flex-wrap:wrap;background:var(--chip);padding:4px;border-radius:10px;margin-bottom:14px}
+.seg button{border:0;background:none;flex:1 1 auto}
+.seg button.on{background:var(--card);color:var(--brace);font-weight:700}
+.mini{font-size:13px;color:var(--soft);display:block}
+.chk{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink);margin:0;min-height:44px}.chk input{width:22px;height:22px}
+.prop{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg);margin-top:10px}
+.prop ul{margin:6px 0 10px;padding-left:18px}
+.d8 td:first-child{font:700 20px/1 "Alegreya SC",serif;color:var(--ottone);width:48px}
+.d8 tr.hit{background:var(--chip)}.d8 tr.hit td:first-child{color:var(--brace)}
+.veil{position:fixed;inset:0;background:rgb(0 0 0/.55);z-index:40;display:grid;place-items:center;padding:16px}
+.veil[hidden]{display:none}
+.sheet{background:var(--card);border:1px solid var(--line);border-top:6px solid var(--brace);border-radius:12px;max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px}
+.sheet dl{display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:6px 12px;margin:12px 0}
+.sheet dt{color:var(--soft);font-size:14px}.sheet dd{margin:0}
+@media(max-width:600px){.sheet dl{grid-template-columns:minmax(0,1fr)}.sheet dt{margin-top:6px}}
+.back{font-weight:700;color:var(--brace);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.sm2{min-height:36px;font-size:14px;font-weight:500;color:var(--ink);border-color:var(--line);margin-left:6px}
+.mhead{display:flex;justify-content:space-between;align-items:end;gap:12px;border-bottom:3px solid var(--brace);padding-bottom:10px}
+.gsbox{text-align:center;border:2px solid var(--ottone);border-radius:10px;padding:4px 12px;flex:none}.gsbox span{display:block;font-size:12px;color:var(--soft)}.gsbox b{font:700 30px/1 "Alegreya SC",serif;color:var(--ottone)}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.quick div{background:var(--chip);border-radius:8px;padding:8px 10px}.quick span{display:block;font-size:12px;color:var(--soft)}.quick b{font-size:17px}
+@media(max-width:600px){.quick{grid-template-columns:repeat(2,minmax(0,1fr))}}
+table.sb th{width:12em;font-size:14px;color:var(--soft);font-weight:500;vertical-align:top}table.sb td{vertical-align:top}
+table.sb tr:nth-child(even){background:color-mix(in srgb,var(--chip) 50%,transparent)}
+@media(max-width:600px){table.sb th,table.sb td{display:block;width:auto;border:0;padding:2px 4px}table.sb th{padding-top:8px}table.sb tr{border-bottom:1px solid var(--line);display:block}}
+.mtop{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;margin:14px 0;align-items:start}
+.mtop .quick{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}
+.pic{margin:0;border-radius:12px;overflow:hidden;background:var(--chip);position:relative;aspect-ratio:1}
+.pic svg,.pic img{display:block;width:100%;height:100%;object-fit:cover}
+.pic figcaption{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font-size:13px;color:#f6ead8;background:linear-gradient(transparent,rgb(0 0 0/.6))}
+.pic.drop{outline:3px dashed var(--brace);outline-offset:-3px}
+label.btnl.up{display:inline-flex;margin:0;font-size:15px;cursor:pointer}
+@media(max-width:600px){.mtop{grid-template-columns:minmax(0,1fr)}.pic{max-width:320px}}
+.dropz{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;background:var(--bg)}
+.dropz.drop{border-color:var(--brace)}
+.bk{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dotted var(--line)}
+.bk img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:var(--chip)}
+.bk.miss input{border-color:var(--brace)}
+.fastgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;margin-top:10px;align-items:start}
+.fastgrid img{width:100%;max-height:420px;object-fit:contain;background:#fff;border-radius:10px;border:1px solid var(--line)}
+.sug{display:flex;flex-direction:column;gap:4px;margin-top:6px}.sug button{text-align:left;justify-content:flex-start}.sug button.on{border-color:var(--brace);background:var(--chip)}
+@media(max-width:600px){.fastgrid{grid-template-columns:minmax(0,1fr)}}
+body:not(.ed) .edonly,body:not(.ed) [data-act=add],body:not(.ed) [data-act=addmix],body:not(.ed) [data-act=addtab],body:not(.ed) [data-act=addh],body:not(.ed) [data-act=delh],body:not(.ed) [data-act=load],body:not(.ed) [data-act=dels],body:not(.ed) [data-stato],body:not(.ed) [data-act=delimg]{display:none!important}
+input[readonly]{background:transparent;border-color:transparent;padding-left:0}
+.mbtn{margin-left:8px}.mbtn.on{background:var(--brace);border-color:var(--brace);color:#fff6ee;font-weight:700}
+.pwerr{color:var(--brace);font-weight:700;min-height:1.5em;margin:6px 0}
+.card a:not(.btnl):not(.lnk):not(.back){color:var(--brace)}
+.stat{font-size:13px;color:var(--soft);display:block}
+.btnl{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--brace);color:var(--brace);font-weight:700;text-decoration:none}
+.btnl:hover{background:var(--chip)}
+body.wide main{grid-template-columns:minmax(0,1fr)}body.wide #side{display:none}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:0 6px;border-radius:6px;background:var(--chip);color:var(--brace);vertical-align:1px}
+#nav{flex-wrap:wrap}
+.pgrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.pgg4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pgg4 select,.pgg4 input{width:100%}
+.pgcar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pgc{background:var(--chip);border-radius:10px;padding:8px;text-align:center}
+.pgc>span{display:block;font-size:13px;color:var(--soft)}.pgc>b{display:block;font-size:26px;line-height:1.1}.pgc>em{display:inline-block;font-style:normal;font-weight:700;border:1px solid var(--line);border-radius:12px;padding:0 8px;margin:2px 0 4px;background:var(--card)}
+.pgc label{font-size:12px;margin:6px 0 2px;text-align:left}.pgc input,.pgc select{width:100%;text-align:center}
+.pgstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.pgstat div{background:var(--chip);border-radius:8px;padding:8px 10px}.pgstat span{display:block;font-size:13px;color:var(--soft)}.pgstat b{font-size:22px}.pgstat em{display:block;font-style:normal;font-size:13px;color:var(--soft)}
+.pg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}.pg2>.card{margin:0 0 16px}
+table.pgt{width:100%;border-collapse:collapse}table.pgt td,table.pgt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}table.pgt th{font-size:13px;color:var(--soft);font-weight:600}
+table.pgsk td:first-child,table.pgsk td:nth-child(2){width:56px;text-align:center}tr.pgcl td:nth-child(3){font-weight:600}
+.pgslot{display:flex;flex-wrap:wrap;gap:8px}.pgslot div{background:var(--chip);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:4px}.pgslot span{font-weight:700;margin-right:4px}
+.pgmon{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.pgmon input{width:100%}
+.pgwarn{margin:10px 0 0;padding:8px 10px;border-left:3px solid var(--brace);background:var(--chip);border-radius:6px}.pgbad{color:var(--brace);font-weight:600}
+details.pgf{border-bottom:1px solid var(--line);padding:6px 0}details.pgf summary{cursor:pointer;font-weight:600;min-height:30px;display:flex;align-items:center;gap:6px}details.pgf p{margin:6px 0;max-width:75ch}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--brace)}
+.card h4{margin:14px 0 6px;color:var(--brace)}
+@media(max-width:800px){.pgg4{grid-template-columns:repeat(2,minmax(0,1fr))}.pgcar{grid-template-columns:repeat(3,minmax(0,1fr))}.pg2{grid-template-columns:minmax(0,1fr)}}
+table.pgsk3 input{text-align:center}input.pgbadin{border-color:var(--brace);color:var(--brace)}table.pgt td textarea{width:100%;min-height:34px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sala d'Armi 3.5</h1>
+  <nav id="nav"><a href="#gruppo" data-v="gruppo">Gruppo</a><a href="#generatore" data-v="generatore">Generatore</a><a href="#bestiario" data-v="bestiario">Bestiario</a><a href="#incontri" data-v="incontri">Incontri salvati</a><a href="#pg" data-v="pg">Schede personaggi</a></nav>
+  <div class="pl" id="pl"></div><button class="sm mbtn" id="mbtn" data-act="menu">← Menu</button>
+</header>
+<main><div id="work"></div><aside class="side" id="side"></aside></main>
+<div class="toast" id="toast"></div>
+<div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t"></div></div>
+<script>
+{
+const B = [["Coboldo","Kobold",0.25,"Umanoide","Sotterraneo"],["Ragno mostruoso Minuscolo","Monstrous Spider, Tiny",0.25,"Parassita","Ovunque"],["Scorpione mostruoso Minuscolo","Monstrous Scorpion, Tiny",0.25,"Parassita","Deserti"],["Cane","Dog",0.3333,"Animale","Ovunque"],["Falco","Hawk",0.3333,"Animale","Foreste"],["Goblin","Goblin",0.3333,"Umanoide","Colline e montagne"],["Ratto crudele","Dire Rat",0.3333,"Animale","Sotterraneo"],["Scarabeo di fuoco gigante","Giant Fire Beetle",0.3333,"Parassita","Pianure"],["Scheletro umano","Human Warrior Skeleton",0.3333,"Non morto","Ovunque"],["Aquila","Eagle",0.5,"Animale","Colline e montagne"],["Babbuino","Baboon",0.5,"Animale","Pianure"],["Centopiedi mostruoso Medio","Monstrous Centipede, Medium",0.5,"Parassita","Sotterraneo"],["Formian operaio","Formian Worker",0.5,"Esterno","Piani esterni"],["Hobgoblin","Hobgoblin",0.5,"Umanoide","Colline e montagne"],["Locathah","Locathah",0.5,"Umanoide","Acqua"],["Merfolk","Merfolk",0.5,"Umanoide","Acqua"],["Oggetto animato Minuscolo","Animated Object, Tiny",0.5,"Costrutto","Ovunque"],["Orco","Orc",0.5,"Umanoide","Colline e montagne"],["Ragno mostruoso Piccolo","Monstrous Spider, Small",0.5,"Parassita","Ovunque"],["Scorpione mostruoso Piccolo","Monstrous Scorpion, Small",0.5,"Parassita","Deserti"],["Stirge","Stirge",0.5,"Bestia magica","Paludi"],["Zombi umano","Human Commoner Zombie",0.5,"Non morto","Ovunque"],["Cane da galoppo","Riding Dog",1,"Animale","Ovunque"],["Centopiedi mostruoso Grande","Monstrous Centipede, Large",1,"Parassita","Sotterraneo"],["Darkmantle","Darkmantle",1,"Bestia magica","Sotterraneo"],["Drow","Drow (Dark Elf)",1,"Umanoide","Sotterraneo"],["Duergar","Duergar",1,"Umanoide","Sotterraneo"],["Elementale Piccolo (qualsiasi)","Elemental, Small",1,"Elementale","Piani esterni"],["Formica gigante operaia","Giant Ant, Worker",1,"Parassita","Pianure"],["Fungo strillante","Shrieker",1,"Vegetale","Sotterraneo"],["Ghoul","Ghoul",1,"Non morto","Ovunque"],["Gnoll","Gnoll",1,"Umanoide","Pianure"],["Grimlock","Grimlock",1,"Umanoide mostruoso","Sotterraneo"],["Iena","Hyena",1,"Animale","Pianure"],["Krenshar","Krenshar",1,"Bestia magica","Pianure"],["Lemure","Lemure",1,"Esterno","Piani esterni"],["Lucertoloide","Lizardfolk",1,"Umanoide","Paludi"],["Lupo","Wolf",1,"Animale","Foreste"],["Nixie","Nixie",1,"Folletto","Foreste"],["Oggetto animato Piccolo","Animated Object, Small",1,"Costrutto","Ovunque"],["Omuncolo","Homunculus",1,"Costrutto","Ovunque"],["Polpo","Octopus",1,"Animale","Acqua"],["Pseudodrago","Pseudodragon",1,"Bestia magica","Foreste"],["Ragno mostruoso Medio","Monstrous Spider, Medium",1,"Parassita","Ovunque"],["Scheletro di lupo","Wolf Skeleton",1,"Non morto","Ovunque"],["Sciame di ragni","Spider Swarm",1,"Sciame","Foreste"],["Scorpione mostruoso Medio","Monstrous Scorpion, Medium",1,"Parassita","Deserti"],["Serpente velenoso Medio","Viper (Medium)",1,"Animale","Foreste"],["Squalo Medio","Shark, Medium",1,"Animale","Acqua"],["Svirfneblin","Svirfneblin",1,"Umanoide","Sotterraneo"],["Troglodita","Troglodyte",1,"Umanoide","Sotterraneo"],["Arconte lanterna","Lantern Archon",2,"Esterno","Piani esterni"],["Azer","Azer",2,"Esterno","Piani esterni"],["Bisonte","Bison",2,"Animale","Pianure"],["Bugbear","Bugbear",2,"Umanoide","Colline e montagne"],["Cane intermittente","Blink Dog",2,"Bestia magica","Pianure"],["Cavallo da guerra pesante","Heavy Warhorse",2,"Animale","Pianure"],["Centopiedi mostruoso Enorme","Monstrous Centipede, Huge",2,"Parassita","Sotterraneo"],["Choker","Choker",2,"Aberrazione","Sotterraneo"],["Cinghiale","Boar",2,"Animale","Foreste"],["Coccodrillo","Crocodile",2,"Animale","Paludi"],["Donnola crudele","Dire Weasel",2,"Animale","Foreste"],["Dretch","Dretch",2,"Esterno","Piani esterni"],["Formica gigante regina","Giant Ant, Queen",2,"Parassita","Pianure"],["Formica gigante soldato","Giant Ant, Soldier",2,"Parassita","Pianure"],["Ghiottone","Wolverine",2,"Animale","Foreste"],["Imp","Imp",2,"Esterno","Piani esterni"],["Ippogrifo","Hippogriff",2,"Bestia magica","Colline e montagne"],["Leopardo","Leopard",2,"Animale","Foreste"],["Lucertola elettrica","Shocker Lizard",2,"Bestia magica","Paludi"],["Mannaro ratto","Wererat",2,"Umanoide mostruoso","Urbano"],["Oggetto animato Medio","Animated Object, Medium",2,"Costrutto","Ovunque"],["Orso nero","Black Bear",2,"Animale","Foreste"],["Pipistrello crudele","Dire Bat",2,"Animale","Sotterraneo"],["Quasit","Quasit",2,"Esterno","Piani esterni"],["Ragno mostruoso Grande","Monstrous Spider, Large",2,"Parassita","Ovunque"],["Sahuagin","Sahuagin",2,"Umanoide","Acqua"],["Satiro","Satyr",2,"Folletto","Foreste"],["Scarabeo bombardiere gigante","Giant Bombardier Beetle",2,"Parassita","Foreste"],["Sciame di pipistrelli","Bat Swarm",2,"Sciame","Sotterraneo"],["Sciame di ratti","Rat Swarm",2,"Sciame","Urbano"],["Scimmia","Ape",2,"Animale","Foreste"],["Serpente costrittore","Constrictor Snake",2,"Animale","Foreste"],["Skum","Skum",2,"Aberrazione","Acqua"],["Squalo Grande","Shark, Large",2,"Animale","Acqua"],["Tasso crudele","Dire Badger",2,"Animale","Foreste"],["Thoqqua","Thoqqua",2,"Elementale","Piani esterni"],["Tritone","Triton",2,"Esterno","Piani esterni"],["Vargouille","Vargouille",2,"Esterno","Piani esterni"],["Worg","Worg",2,"Bestia magica","Pianure"],["Allip","Allip",3,"Non morto","Ovunque"],["Ankheg","Ankheg",3,"Bestia magica","Pianure"],["Aquila gigante","Giant Eagle",3,"Bestia magica","Colline e montagne"],["Centauro","Centaur",3,"Umanoide mostruoso","Foreste"],["Coccatrice","Cockatrice",3,"Bestia magica","Pianure"],["Cubo gelatinoso","Gelatinous Cube",3,"Melma","Sotterraneo"],["Deinonico","Deinonychus",3,"Animale","Foreste"],["Derro","Derro",3,"Umanoide mostruoso","Sotterraneo"],["Doppelganger","Doppelganger",3,"Umanoide mostruoso","Urbano"],["Driade","Dryad",3,"Folletto","Foreste"],["Elementale Medio (qualsiasi)","Elemental, Medium",3,"Elementale","Piani esterni"],["Ettercap","Ettercap",3,"Aberrazione","Foreste"],["Falco freccia giovane","Arrowhawk, Juvenile",3,"Esterno","Piani esterni"],["Formian guerriero","Formian Warrior",3,"Esterno","Piani esterni"],["Fungo fantasma","Phantom Fungus",3,"Vegetale","Sotterraneo"],["Fungo violetto","Violet Fungus",3,"Vegetale","Sotterraneo"],["Ghast","Ghast",3,"Non morto","Ovunque"],["Grick","Grick",3,"Aberrazione","Sotterraneo"],["Grig","Grig",3,"Folletto","Foreste"],["Gufo gigante","Giant Owl",3,"Bestia magica","Foreste"],["Howler","Howler",3,"Esterno","Piani esterni"],["Ladro etereo","Ethereal Filcher",3,"Bestia magica","Ovunque"],["Leone","Lion",3,"Animale","Pianure"],["Lupo crudele","Dire Wolf",3,"Animale","Foreste"],["Magmin","Magmin",3,"Elementale","Piani esterni"],["Mannaro lupo","Werewolf",3,"Umanoide mostruoso","Foreste"],["Mantide religiosa gigante","Giant Praying Mantis",3,"Parassita","Foreste"],["Mefite (qualsiasi)","Mephit (any)",3,"Esterno","Piani esterni"],["Oggetto animato Grande","Animated Object, Large",3,"Costrutto","Ovunque"],["Ogre","Ogre",3,"Gigante","Colline e montagne"],["Ombra","Shadow",3,"Non morto","Ovunque"],["Pegaso","Pegasus",3,"Bestia magica","Pianure"],["Predone etereo","Ethereal Marauder",3,"Bestia magica","Ovunque"],["Rugginofago","Rust Monster",3,"Aberrazione","Sotterraneo"],["Salamandra fratello di fiamma","Flamebrother Salamander",3,"Esterno","Piani esterni"],["Sciame di locuste","Locust Swarm",3,"Sciame","Pianure"],["Scimmia crudele","Dire Ape",3,"Animale","Foreste"],["Scorpione mostruoso Grande","Monstrous Scorpion, Large",3,"Parassita","Deserti"],["Segugio infernale","Hell Hound",3,"Esterno","Piani esterni"],["Segugio yeth","Yeth Hound",3,"Esterno","Piani esterni"],["Tojanida giovane","Juvenile Tojanida",3,"Esterno","Piani esterni"],["Unicorno","Unicorn",3,"Bestia magica","Foreste"],["Vespa gigante","Giant Wasp",3,"Parassita","Foreste"],["Viticcio assassino","Assassin Vine",3,"Vegetale","Foreste"],["Wight","Wight",3,"Non morto","Ovunque"],["Xorn minore","Lesser Xorn",3,"Esterno","Piani esterni"],["Aranea","Aranea",4,"Bestia magica","Foreste"],["Arconte segugio","Hound Archon",4,"Esterno","Piani esterni"],["Arpia","Harpy",4,"Umanoide mostruoso","Paludi"],["Barghest","Barghest",4,"Esterno","Piani esterni"],["Cinghiale crudele","Dire Boar",4,"Animale","Foreste"],["Coccodrillo gigante","Giant Crocodile",4,"Animale","Paludi"],["Gargoyle","Gargoyle",4,"Umanoide mostruoso","Urbano"],["Gatto marino","Sea Cat",4,"Bestia magica","Acqua"],["Ghiottone crudele","Dire Wolverine",4,"Animale","Freddo"],["Grifone","Griffon",4,"Bestia magica","Colline e montagne"],["Idra a 5 teste","Hydra, Five-Headed",4,"Bestia magica","Paludi"],["Janni","Janni",4,"Esterno","Piani esterni"],["Mannaro cinghiale","Wereboar",4,"Umanoide mostruoso","Foreste"],["Megera marina","Sea Hag",4,"Umanoide mostruoso","Acqua"],["Melma grigia","Gray Ooze",4,"Melma","Sotterraneo"],["Mimic","Mimic",4,"Aberrazione","Sotterraneo"],["Minotauro","Minotaur",4,"Umanoide mostruoso","Sotterraneo"],["Orso bruno","Brown Bear",4,"Animale","Foreste"],["Orso polare","Polar Bear",4,"Animale","Freddo"],["Orsogufo","Owlbear",4,"Bestia magica","Foreste"],["Otyugh","Otyugh",4,"Aberrazione","Sotterraneo"],["Pixie","Pixie",4,"Folletto","Foreste"],["Progenie vampirica","Vampire Spawn",4,"Non morto","Ovunque"],["Rinoceronte","Rhinoceros",4,"Animale","Pianure"],["Scarabeo cervo gigante","Giant Stag Beetle",4,"Parassita","Foreste"],["Sciame di centopiedi","Centipede Swarm",4,"Sciame","Sotterraneo"],["Squalo Enorme","Shark, Huge",4,"Animale","Acqua"],["Tigre","Tiger",4,"Animale","Foreste"],["Achaierai","Achaierai",5,"Esterno","Piani esterni"],["Barghest superiore","Greater Barghest",5,"Esterno","Piani esterni"],["Basilisco","Basilisk",5,"Bestia magica","Deserti"],["Bocca farfugliante","Gibbering Mouther",5,"Aberrazione","Sotterraneo"],["Cloaker","Cloaker",5,"Aberrazione","Sotterraneo"],["Diavolo barbuto","Bearded Devil",5,"Esterno","Piani esterni"],["Djinni","Djinni",5,"Esterno","Piani esterni"],["Elementale Grande (qualsiasi)","Elemental, Large",5,"Elementale","Piani esterni"],["Falco freccia adulto","Arrowhawk, Adult",5,"Esterno","Piani esterni"],["Gelatina ocra","Ochre Jelly",5,"Melma","Sotterraneo"],["Ieracosfinge","Hieracosphinx",5,"Bestia magica","Deserti"],["Incubo (cavallo)","Nightmare",5,"Esterno","Piani esterni"],["Leone crudele","Dire Lion",5,"Animale","Pianure"],["Lupo invernale","Winter Wolf",5,"Bestia magica","Freddo"],["Mangiaragni","Spider Eater",5,"Bestia magica","Colline e montagne"],["Mannaro tigre","Weretiger",5,"Umanoide mostruoso","Foreste"],["Manticora","Manticore",5,"Bestia magica","Paludi"],["Mastino d'ombra","Shadow Mastiff",5,"Esterno","Piani esterni"],["Megera verde","Green Hag",5,"Umanoide mostruoso","Paludi"],["Mummia","Mummy",5,"Non morto","Deserti"],["Oggetto animato Enorme","Animated Object, Huge",5,"Costrutto","Ovunque"],["Orca","Whale, Orca",5,"Animale","Acqua"],["Ragno fase","Phase Spider",5,"Bestia magica","Colline e montagne"],["Ragno mostruoso Enorme","Monstrous Spider, Huge",5,"Parassita","Ovunque"],["Rast","Rast",5,"Esterno","Piani esterni"],["Ravid","Ravid",5,"Esterno","Piani esterni"],["Serpente costrittore gigante","Giant Constrictor Snake",5,"Animale","Foreste"],["Tojanida adulta","Adult Tojanida",5,"Esterno","Piani esterni"],["Troll","Troll",5,"Gigante","Colline e montagne"],["Wraith","Wraith",5,"Non morto","Ovunque"],["Annis","Annis",6,"Umanoide mostruoso","Freddo"],["Babau","Babau",6,"Esterno","Piani esterni"],["Belker","Belker",6,"Elementale","Piani esterni"],["Bralani","Bralani",6,"Esterno","Piani esterni"],["Centopiedi mostruoso Mastodontico","Monstrous Centipede, Gargantuan",6,"Parassita","Sotterraneo"],["Cumulo strisciante","Shambling Mound",6,"Vegetale","Paludi"],["Diavolo delle catene","Chain Devil",6,"Esterno","Piani esterni"],["Digestore","Digester",6,"Bestia magica","Pianure"],["Ettin","Ettin",6,"Gigante","Colline e montagne"],["Fuoco fatuo","Will-o'-Wisp",6,"Bestia magica","Paludi"],["Girallon","Girallon",6,"Bestia magica","Foreste"],["Idra a 7 teste","Hydra, Seven-Headed",6,"Bestia magica","Paludi"],["Lamia","Lamia",6,"Bestia magica","Deserti"],["Megaraptor","Megaraptor",6,"Animale","Foreste"],["Salamandra","Average Salamander",6,"Esterno","Piani esterni"],["Tendriculos","Tendriculos",6,"Vegetale","Foreste"],["Viverna","Wyvern",6,"Bestia magica","Colline e montagne"],["Xill","Xill",6,"Esterno","Piani esterni"],["Xorn medio","Average Xorn",6,"Esterno","Piani esterni"],["Aboleth","Aboleth",7,"Aberrazione","Sotterraneo"],["Athach","Athach",7,"Aberrazione","Colline e montagne"],["Bestia del caos","Chaos Beast",7,"Esterno","Piani esterni"],["Budino nero","Black Pudding",7,"Melma","Sotterraneo"],["Bulette","Bulette",7,"Bestia magica","Colline e montagne"],["Cacciatore invisibile","Invisible Stalker",7,"Elementale","Piani esterni"],["Chimera","Chimera",7,"Bestia magica","Colline e montagne"],["Chuul","Chuul",7,"Aberrazione","Paludi"],["Criosfinge","Criosphinx",7,"Bestia magica","Deserti"],["Dragonne","Dragonne",7,"Bestia magica","Deserti"],["Drider","Drider",7,"Aberrazione","Sotterraneo"],["Elasmosauro","Elasmosaurus",7,"Animale","Acqua"],["Elefante","Elephant",7,"Animale","Pianure"],["Elementale Enorme (qualsiasi)","Elemental, Huge",7,"Elementale","Piani esterni"],["Formian sorvegliante","Formian Taskmaster",7,"Esterno","Piani esterni"],["Gatto infernale","Hellcat",7,"Esterno","Piani esterni"],["Gigante delle colline","Hill Giant",7,"Gigante","Colline e montagne"],["Golem di carne","Flesh Golem",7,"Costrutto","Ovunque"],["Lillend","Lillend",7,"Esterno","Piani esterni"],["Mannaro orso","Werebear",7,"Umanoide mostruoso","Foreste"],["Medusa","Medusa",7,"Umanoide mostruoso","Paludi"],["Naga acquatica","Water Naga",7,"Aberrazione","Acqua"],["Ninfa","Nymph",7,"Folletto","Foreste"],["Oggetto animato Mastodontico","Animated Object, Gargantuan",7,"Costrutto","Ovunque"],["Orso crudele","Dire Bear",7,"Animale","Foreste"],["Remorhaz","Remorhaz",7,"Bestia magica","Freddo"],["Scorpione mostruoso Enorme","Monstrous Scorpion, Huge",7,"Parassita","Deserti"],["Spettro","Spectre",7,"Non morto","Ovunque"],["Succube","Succubus",7,"Esterno","Piani esterni"],["Behir","Behir",8,"Bestia magica","Colline e montagne"],["Bodak","Bodak",8,"Non morto","Piani esterni"],["Destrachan","Destrachan",8,"Aberrazione","Sotterraneo"],["Efreeti","Efreeti",8,"Esterno","Piani esterni"],["Erinni","Erinyes",8,"Esterno","Piani esterni"],["Falco freccia anziano","Arrowhawk, Elder",8,"Esterno","Piani esterni"],["Gigante delle pietre","Stone Giant",8,"Gigante","Colline e montagne"],["Ginosfinge","Gynosphinx",8,"Bestia magica","Deserti"],["Gorgone","Gorgon",8,"Bestia magica","Pianure"],["Guardiano protettore","Shield Guardian",8,"Costrutto","Ovunque"],["Idra a 9 teste","Hydra, Nine-Headed",8,"Bestia magica","Paludi"],["Lammasu","Lammasu",8,"Bestia magica","Deserti"],["Mohrg","Mohrg",8,"Non morto","Ovunque"],["Naga oscura","Dark Naga",8,"Aberrazione","Colline e montagne"],["Ogre magi","Ogre Mage",8,"Gigante","Colline e montagne"],["Ombra superiore","Greater Shadow",8,"Non morto","Ovunque"],["Polpo gigante","Giant Octopus",8,"Animale","Acqua"],["Ragno mostruoso Mastodontico","Monstrous Spider, Gargantuan",8,"Parassita","Ovunque"],["Sciame di vespe infernali","Hellwasp Swarm",8,"Sciame","Piani esterni"],["Squartatore grigio","Gray Render",8,"Bestia magica","Paludi"],["Tigre crudele","Dire Tiger",8,"Animale","Foreste"],["Tirannosauro","Tyrannosaurus",8,"Animale","Pianure"],["Treant","Treant",8,"Vegetale","Foreste"],["Xorn anziano","Elder Xorn",8,"Esterno","Piani esterni"],["Androsfinge","Androsphinx",9,"Bestia magica","Deserti"],["Avoral","Avoral",9,"Esterno","Piani esterni"],["Calamaro gigante","Giant Squid",9,"Animale","Acqua"],["Centopiedi mostruoso Colossale","Monstrous Centipede, Colossal",9,"Parassita","Sotterraneo"],["Delver","Delver",9,"Aberrazione","Sotterraneo"],["Diavolo d'ossa","Bone Devil",9,"Esterno","Piani esterni"],["Elementale superiore (qualsiasi)","Elemental, Greater",9,"Elementale","Piani esterni"],["Gigante del gelo","Frost Giant",9,"Gigante","Freddo"],["Naga spirito","Spirit Naga",9,"Aberrazione","Paludi"],["Roc","Roc",9,"Bestia magica","Colline e montagne"],["Segugio infernale di Nessus","Nessian Warhound",9,"Esterno","Piani esterni"],["Squalo crudele","Dire Shark",9,"Animale","Acqua"],["Tartaruga dragona","Dragon Turtle",9,"Bestia magica","Acqua"],["Tojanida anziana","Elder Tojanida",9,"Esterno","Piani esterni"],["Triceratopo","Triceratops",9,"Animale","Pianure"],["Vrock","Vrock",9,"Esterno","Piani esterni"],["Yrthak","Yrthak",9,"Bestia magica","Colline e montagne"],["Zelekhut","Zelekhut",9,"Esterno","Piani esterni"],["Bebilith","Bebilith",10,"Esterno","Piani esterni"],["Couatl","Couatl",10,"Esterno","Piani esterni"],["Formian mirmarca","Formian Myrmarch",10,"Esterno","Piani esterni"],["Gigante del fuoco","Fire Giant",10,"Gigante","Colline e montagne"],["Golem di argilla","Clay Golem",10,"Costrutto","Ovunque"],["Naga guardiana","Guardian Naga",10,"Aberrazione","Pianure"],["Oggetto animato Colossale","Animated Object, Colossal",10,"Costrutto","Ovunque"],["Rakshasa","Rakshasa",10,"Esterno","Piani esterni"],["Salamandra nobile","Noble Salamander",10,"Esterno","Piani esterni"],["Scorpione mostruoso Mastodontico","Monstrous Scorpion, Gargantuan",10,"Parassita","Deserti"],["Diavolo spinato","Barbed Devil",11,"Esterno","Piani esterni"],["Divoratore","Devourer",11,"Non morto","Piani esterni"],["Elementale anziano (qualsiasi)","Elemental, Elder",11,"Elementale","Piani esterni"],["Gigante delle nuvole","Cloud Giant",11,"Gigante","Colline e montagne"],["Golem di pietra","Stone Golem",11,"Costrutto","Ovunque"],["Hezrou","Hezrou",11,"Esterno","Piani esterni"],["Idra a 12 teste","Hydra, Twelve-Headed",11,"Bestia magica","Paludi"],["Ragno mostruoso Colossale","Monstrous Spider, Colossal",11,"Parassita","Ovunque"],["Recuperatore","Retriever",11,"Costrutto","Ovunque"],["Wraith terrificante","Dread Wraith",11,"Non morto","Ovunque"],["Kolyarut","Kolyarut",12,"Esterno","Piani esterni"],["Kraken","Kraken",12,"Bestia magica","Acqua"],["Leonal","Leonal",12,"Esterno","Piani esterni"],["Roper","Roper",12,"Bestia magica","Sotterraneo"],["Scorpione mostruoso Colossale","Monstrous Scorpion, Colossal",12,"Parassita","Deserti"],["Verme del gelo","Frost Worm",12,"Bestia magica","Freddo"],["Verme purpureo","Purple Worm",12,"Bestia magica","Sotterraneo"],["Diavolo del ghiaccio","Ice Devil",13,"Esterno","Piani esterni"],["Ghaele","Ghaele",13,"Esterno","Piani esterni"],["Gigante delle tempeste","Storm Giant",13,"Gigante","Colline e montagne"],["Glabrezu","Glabrezu",13,"Esterno","Piani esterni"],["Golem di ferro","Iron Golem",13,"Costrutto","Ovunque"],["Ala notturna","Nightwing",14,"Non morto","Ovunque"],["Arconte tromba","Trumpet Archon",14,"Esterno","Piani esterni"],["Deva astrale","Astral Deva",14,"Esterno","Piani esterni"],["Nalfeshnee","Nalfeshnee",14,"Esterno","Piani esterni"],["Marut","Marut",15,"Esterno","Piani esterni"],["Signore delle mummie","Mummy Lord",15,"Non morto","Deserti"],["Camminatore notturno","Nightwalker",16,"Non morto","Ovunque"],["Diavolo cornuto","Horned Devil",16,"Esterno","Piani esterni"],["Planetar","Planetar",16,"Esterno","Piani esterni"],["Formian regina","Formian Queen",17,"Esterno","Piani esterni"],["Marilith","Marilith",17,"Esterno","Piani esterni"],["Strisciante notturno","Nightcrawler",18,"Non morto","Sotterraneo"],["Balor","Balor",20,"Esterno","Piani esterni"],["Diavolo della fossa","Pit Fiend",20,"Esterno","Piani esterni"],["Tarrasque","Tarrasque",20,"Bestia magica","Ovunque"],["Solar","Solar",23,"Esterno","Piani esterni"]].map(([nome,en,gs,tipo,amb],i)=>({id:i,nome,en,gs,tipo,amb}));
+// Creature di altri manuali: solo indice (nome, GS, tipo, ambiente, pagina). La scheda la compila il master.
+[['Grell','Grell',3,'Aberrazione','Sotterraneo','Manuale dei Mostri II',103,'Media']].forEach(([nome,en,gs,tipo,amb,fonte,pag,taglia]) => B.push({id:B.length,nome,en,gs,tipo,amb,fonte,pag,taglia}));
+const ZONE = [["U", "Urbano"], ["P", "Pianure"], ["F", "Foreste"], ["C", "Colline"], ["M", "Montagne"], ["D", "Deserti"], ["S", "Paludi"], ["A", "Artico"], ["K", "Costa"], ["W", "Mare e acque"], ["T", "Sottosuolo"], ["R", "Rovine e dungeon"], ["X", "Piani esterni"]];
+const ZN = Object.fromEntries(ZONE);
+const zoneTxt = b => b.zone==='*' ? 'Ovunque' : [...(b.zone||'')].map(c=>ZN[c]).join(', ');
+const inZona = (b,z) => !z || b.zone==='*' || (b.zone||'').includes(z);
+const zoneOpt = (v) => ZONE.map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('');
+const Z35 = ["TM", "FT", "D", "U", "MC", "FCT", "UT", "T", "R", "MC", "FC", "TF", "X", "CFP", "W", "WK", "RU", "CMF", "FT", "D", "SFT", "RS", "UP", "TF", "T", "T", "T", "X", "PC", "T", "RUS", "PD", "T", "PD", "P", "X", "S", "FA", "FW", "RU", "U", "W", "FC", "FT", "R", "FT", "D", "FDS", "W", "T", "T", "X", "XM", "P", "FCT", "FX", "U", "T", "T", "F", "S", "F", "X", "PC", "PC", "FA", "XU", "CM", "F", "S", "UT", "RU", "F", "T", "XUR", "FT", "WK", "F", "F", "T", "UT", "F", "FS", "WT", "W", "F", "XT", "WX", "XR", "FC", "R", "PF", "M", "PF", "PS", "RT", "F", "T", "U", "F", "X", "F", "X", "X", "T", "T", "RUS", "TF", "F", "F", "X", "XU", "P", "FA", "XM", "FC", "F", "X", "RU", "CFM", "RU", "MP", "X", "T", "X", "PD", "F", "D", "XM", "X", "X", "F", "F", "F", "RS", "XT", "F", "X", "KMC", "XC", "F", "S", "URM", "W", "A", "MC", "S", "D", "FC", "KW", "TS", "RU", "RT", "FC", "A", "F", "TUS", "F", "UR", "P", "F", "T", "W", "F", "X", "XC", "MDT", "T", "T", "X", "XD", "X", "X", "TR", "D", "X", "P", "A", "C", "F", "CMD", "X", "FS", "DR", "R", "W", "XT", "FT", "X", "X", "SF", "X", "SMF", "R", "A", "X", "X", "X", "T", "SF", "XR", "XP", "CMT", "SF", "F", "S", "D", "F", "X", "F", "MC", "X", "XT", "TW", "C", "X", "TR", "PCM", "XU", "CMD", "TWS", "D", "D", "T", "W", "P", "X", "X", "X", "C", "R", "X", "FA", "RD", "WS", "F", "R", "F", "A", "D", "RU", "XU", "TM", "X", "T", "XD", "X", "X", "MT", "D", "PC", "UR", "S", "D", "RU", "CT", "CF", "R", "W", "FT", "X", "S", "F", "PF", "F", "XT", "D", "X", "W", "T", "T", "X", "X", "AM", "RT", "MK", "X", "W", "WK", "X", "PF", "X", "CM", "X", "X", "XFD", "X", "MT", "R", "RF", "R", "UX", "X", "D", "X", "X", "X", "M", "R", "X", "S", "FT", "X", "R", "X", "W", "X", "T", "D", "A", "TD", "X", "X", "KW", "X", "R", "RX", "X", "X", "X", "X", "DR", "RX", "X", "X", "X", "X", "T", "X", "X", "*", "X", "T"];
+B.forEach((b,i) => { b.zone = Z35[i] ?? ''; b.amb = zoneTxt(b); });
+const SK = ['taglia','dv','ini','vel','ca','att','sp','ts','al','spazio','bab','car','abil','tal','org','tes','av'];
+const SKL = {taglia:'Taglia',dv:'Dadi Vita (es. 7d8+7 (38 pf))',ini:'Iniziativa',vel:'Velocità',ca:'Classe Armatura',bab:'Attacco base/Lotta',att:'Attacco completo',spazio:'Spazio/Portata',sp:'Attacchi e qualità speciali',ts:'Tiri salvezza (es. T+3 R+4 V+6)',car:'Caratteristiche',abil:'Abilità',tal:'Talenti',org:'Organizzazione',tes:'Tesoro',al:'Allineamento',av:'Avanzamento'};
+let ST = {};
+const PACKS = [["The Free Monsters (naga, uomo-ratto, treant, troll, lich, demone, goblin, orco, arpia, drago)","https://opengameart.org/content/the-free-monsters","CC BY-SA 3.0"],["Monster Icons Pack Two (centauro, elementale, golem e altri)","https://opengameart.org/content/monster-icons-pack-two","CC BY-SA 3.0"],["Cute Monsters A-E","https://opengameart.org/content/cute-monsters-a-e","CC BY 4.0"],["Cute Monsters F-O","https://opengameart.org/content/cute-monsters-f-o","CC BY 4.0"],["Cute Monsters P-Z","https://opengameart.org/content/cute-monsters-p-z","CC BY 4.0"],["Cute Boss Monsters","https://opengameart.org/content/cute-boss-monsters","CC BY 4.0"]];
+const SUGG = [["Coboldo","DnD_kobold.png","CC0 · LadyofHats"],["Goblin","DnD_Goblin.png","CC0 · LadyofHats"],["Hobgoblin","DnD_Hobgoblin.png","CC0 · LadyofHats"],["Gnoll","DnD_Gnoll.png","CC0 · LadyofHats"],["Orco","DnD_Orc.png","CC0 · LadyofHats"],["Ogre","DnD_Ogre.png","CC0 · LadyofHats"],["Troll","DnD_Troll.png","CC0 · LadyofHats"],["Gigante delle colline","DnD_Giant.png","CC0 · LadyofHats"],["Ghoul","DnD_Ghoul.png","CC0 · LadyofHats"],["Scheletro umano","DnD_skelleton.png","CC0 · LadyofHats"],["Mummia","DnD_Mummy.png","CC0 · LadyofHats"],["Wight","DnD_Wights.png","CC0 · LadyofHats"],["Progenie vampirica","DnD_Vampire.png","CC0 · LadyofHats"],["Mannaro lupo","DnD_Lycantrop.png","CC0 · LadyofHats"],["Ippogrifo","DnD_Hippogriff.png","CC0 · LadyofHats"],["Grifone","DnD_Griffon.png","CC0 · LadyofHats"],["Coccatrice","DnD_Cockatrice.png","CC0 · LadyofHats"],["Basilisco","DnD_Basilisk.png","CC0 · LadyofHats"],["Manticora","DnD_Manticore.png","CC0 · LadyofHats"],["Chimera","DnD_Chimera.png","CC0 · LadyofHats"],["Idra a 5 teste","DnD_Hydra.png","CC0 · LadyofHats"],["Minotauro","DnD_Minotaur.png","CC0 · LadyofHats"],["Medusa","DnD_Medusa.png","CC0 · LadyofHats"],["Centauro","DnD_Centaur.png","CC0 · LadyofHats"],["Gorgone","Dnd_Gorgon.png","CC0 · LadyofHats"],["Unicorno","DnD_Unicorn.png","CC0 · LadyofHats"],["Driade","DnD_Dryad.png","CC0 · LadyofHats"],["Nixie","DnD_Nixie.png","CC0 · LadyofHats"],["Pixie","DnD_Pixie.jpg","CC0 · LadyofHats"],["Djinni","DnD_Djinn.png","CC0 · LadyofHats"],["Efreeti","DnD_Efreeti.png","CC0 · LadyofHats"],["Budino nero","DnD_Black_pudding.png","CC0 · LadyofHats"],["Gelatina ocra","DnD_Ochre_Jelly.png","CC0 · LadyofHats"],["Verme purpureo","DnD_PurpleWorm.png","CC0 · LadyofHats"],["Elementale Grande (qualsiasi)","DnD_Stone_Elemental.png","CC0 · LadyofHats"],["Treant","DnD_treant.png","CC0 · LadyofHats"],["Idra a 7 teste","Hercules_Killing_the_Lernean_Hydra.jpg","Pubblico dominio · incisione c. 1565"],["Idra a 9 teste","Hydre.jpg","Pubblico dominio · incisione"],["Idra a 12 teste","Gustave_Moreau_003.jpg","Pubblico dominio · G. Moreau, 1876"],["Lamia","Topsell-91.jpg","Pubblico dominio · E. Topsell, 1607"],["Satiro","Topsell-14.jpg","Pubblico dominio · E. Topsell, 1607"],["Arpia","Harpy,_Melchior_Lorch,_1582.jpg","Pubblico dominio · M. Lorch, 1582"],["Viverna","John_Vinycomb_-_Lindworm,_1906.gif","Pubblico dominio · J. Vinycomb, 1906"],["Ginosfinge","Gustave_Moreau_-_Oedipus_and_the_Sphinx_-_WGA16201.jpg","Pubblico dominio · G. Moreau, 1864"],["Androsfinge","The_Great_Sphinx.jpg","Pubblico dominio · litografia, 1846-49"],["Kraken","Denys_de_Montfort_Poulpe_Colossal.jpg","Pubblico dominio · P. Denys de Montfort, 1810"],["Merfolk","John_William_Waterhouse_A_Mermaid.jpg","Pubblico dominio · J. W. Waterhouse, 1900"],["Fuoco fatuo","Will-o-the-wisp_and_snake_by_Hermann_Hendrich_1823.jpg","Pubblico dominio · H. Hendrich"],["Deva astrale","Paradise_Lost_1.jpg","Pubblico dominio · G. Doré, 1866"],["Diavolo della fossa","GustaveDoreParadiseLostSatanProfile.jpg","Pubblico dominio · G. Doré, 1866"],["Balor","Bael.jpg","Pubblico dominio · Dictionnaire infernal, 1863"],["Glabrezu","Ill_dict_infernal_p0270-254_eurynome_demon.jpg","Pubblico dominio · L. Le Breton, 1863"],["Nalfeshnee","Ill_dict_infernal_p0139-123_buer.jpg","Pubblico dominio · L. Le Breton, 1863"],["Rinoceronte","Albrecht_Dürer,_The_Rhinoceros,_1515,_NGA_47903.jpg","Pubblico dominio · A. Dürer, 1515"],["Elefante","Rembrandt_Harmenszoon_van_Rijn_-_An_Elephant,_1637_-_Google_Art_Project.jpg","Pubblico dominio · Rembrandt, 1637"],["Tirannosauro","T._rex_old_posture.jpg","Pubblico dominio · C. R. Knight, 1919"],["Triceratopo","Knight_Triceratops.jpg","Pubblico dominio · C. R. Knight, 1901"],["Pegaso","DnD_Pegasus.png","CC0 · LadyofHats"],["Roc","DnD_Roc.png","CC0 · LadyofHats"],["Cacciatore invisibile","DnD_Invisible_stalker.png","CC0 · LadyofHats"]].map(([nome,file,lic]) => ({id: B.findIndex(b => b.nome === nome), file, lic})).filter(s => s.id >= 0);
+const FAM = (() => {
+  const L = '#f6ead8', F = `fill="${L}"`, S = w => `fill="none" stroke="${L}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+  const wing = s => `<path d="M120 112 C${120+s*30} 70 ${120+s*70} 52 ${120+s*98} 58 C${120+s*84} 70 ${120+s*86} 82 ${120+s*96} 92 C${120+s*80} 96 ${120+s*76} 106 ${120+s*84} 118 C${120+s*66} 116 ${120+s*56} 124 ${120+s*58} 138 C${120+s*42} 128 ${120+s*30} 128 120 136z" ${F}/>`;
+  const M = {
+    diavolo: [`<path d="M84 74C70 60 66 40 72 24c6 16 18 26 32 30zM156 74c14-14 18-34 12-50-6 16-18 26-32 30z" ${F}/><path d="M120 60c-30 0-46 24-46 52 0 30 22 60 46 72 24-12 46-42 46-72 0-28-16-52-46-52z" ${F}/><path d="M96 108l18 8M144 108l-18 8" stroke="#3a0c0c" stroke-width="7" stroke-linecap="round"/><path d="M104 150q16 10 32 0" ${S(5)} stroke="#3a0c0c"/><path d="M120 184v26M106 196l14 14 14-14" ${S(6)}/>`, ['#a3241c','#2e0806']],
+    demone: [`${wing(-1)}${wing(1)}<path d="M120 96c-18 0-28 16-28 34 0 22 14 40 28 48 14-8 28-26 28-48 0-18-10-34-28-34z" ${F}/><path d="M104 102c-10-12-10-28-2-40 2 14 8 22 16 26M136 102c10-12 10-28 2-40-2 14-8 22-16 26" ${F}/><circle cx="111" cy="130" r="5" fill="#2a0a20"/><circle cx="129" cy="130" r="5" fill="#2a0a20"/>`, ['#7c2148','#22061a']],
+    celestiale: [`<ellipse cx="120" cy="58" rx="30" ry="9" ${S(6)}/>${wing(-1).replace(/112/,'120')}${wing(1).replace(/112/,'120')}<path d="M120 84c-14 0-22 10-22 24s8 22 22 22 22-8 22-22-8-24-22-24zM98 196c0-40 8-60 22-60s22 20 22 60z" ${F}/>`, ['#c49a36','#3a2a0a']],
+    drago: [`<path d="M52 160c10-40 40-74 84-82l20-30 6 30c22 6 36 20 44 40l-34-6 10 18c-18-2-30-8-40-18-8 22-30 40-58 50l10-22z" ${F}/><circle cx="160" cy="88" r="5" fill="#3b1206"/><path d="M60 170c30 0 60 10 80 30" ${S(6)}/>`, ['#b8481c','#2c0c04']],
+    uccello: [`<path d="M120 40c22 0 40 18 40 40 0 14-6 24-16 32l26 22-34-8-16 30-16-30-34 8 26-22c-10-8-16-18-16-32 0-22 18-40 40-40z" ${F}/><path d="M136 74l24 8-22 6z" fill="#2b1d0e"/><circle cx="128" cy="72" r="5" fill="#2b1d0e"/><path d="M104 176l-10 24M120 180v26M136 176l10 24" ${S(7)}/>`, ['#8a6a2c','#271c08']],
+    lupo: [`<path d="M66 52l30 30h48l30-30 4 56c0 36-26 66-58 86-32-20-58-50-58-86z" ${F}/><path d="M96 112l14 6M144 112l-14 6" stroke="#232a33" stroke-width="7" stroke-linecap="round"/><path d="M108 158h24l-12 14z" fill="#232a33"/>`, ['#56667a','#141a22']],
+    orso: [`<circle cx="76" cy="70" r="20" ${F}/><circle cx="164" cy="70" r="20" ${F}/><path d="M120 60c-40 0-60 30-60 66 0 40 28 66 60 66s60-26 60-66c0-36-20-66-60-66z" ${F}/><ellipse cx="120" cy="150" rx="26" ry="20" fill="#3a2614"/><ellipse cx="120" cy="140" rx="10" ry="7" ${F}/><circle cx="98" cy="114" r="6" fill="#3a2614"/><circle cx="142" cy="114" r="6" fill="#3a2614"/>`, ['#7a5230','#24150a']],
+    felino: [`<path d="M62 46l36 34h44l36-34-2 70c-4 40-30 64-56 76-26-12-52-36-56-76z" ${F}/><path d="M92 112q12-10 22 0q-10 8-22 0zM148 112q-12-10-22 0q10 8 22 0z" fill="#3a2a0a"/><path d="M110 150h20l-10 10z" fill="#3a2a0a"/><path d="M60 150l34 4M60 168l34-4M180 150l-34 4M180 168l-34-4" ${S(3)}/>`, ['#b5822a','#2e1f06']],
+    acqua: [`<path d="M70 150c10-56 40-96 72-110-8 34-6 76 20 110z" ${F}/><path d="M30 162c18-14 36-14 54 0s36 14 54 0 36-14 54 0 18 14 24 8M30 192c18-14 36-14 54 0s36 14 54 0 36-14 54 0" ${S(7)}/>`, ['#1f6b8a','#06202c']],
+    serpente: [`<path d="M150 196c-60 4-98-14-98-40 0-30 46-34 72-36 30-2 54-10 54-34 0-22-24-34-50-28" ${S(18)}/><path d="M128 58c-10-16 4-30 22-26 14 4 18 18 8 28-8 8-22 8-30-2z" ${F}/><path d="M156 48l18-4" stroke="#b33" stroke-width="3"/><circle cx="146" cy="44" r="3" fill="#18240c"/>`, ['#4f7a2a','#132008']],
+    fantasma: [`<path d="M72 200V110c0-36 22-62 48-62s48 26 48 62v90l-16-14-16 14-16-14-16 14-16-14z" ${F} opacity=".92"/><ellipse cx="104" cy="112" rx="9" ry="13" fill="#141a26"/><ellipse cx="136" cy="112" rx="9" ry="13" fill="#141a26"/><ellipse cx="120" cy="148" rx="8" ry="11" fill="#141a26"/>`, ['#4a5a7a','#0c1020']],
+    mummia: [`<path d="M120 46c-32 0-52 26-52 62 0 40 22 72 52 86 30-14 52-46 52-86 0-36-20-62-52-62z" ${F}/><path d="M70 92l100-14M68 120l104 6M74 150l92-12M86 176l70 4" stroke="#6a5a3e" stroke-width="5" stroke-linecap="round"/><rect x="94" y="100" width="16" height="9" fill="#1b140a"/><rect x="130" y="102" width="16" height="9" fill="#1b140a"/>`, ['#8a7a52','#221c0e']],
+    licantropo: [`<circle cx="138" cy="86" r="52" ${F}/><path d="M60 204c6-30 14-52 30-66 4-18 12-34 26-44l6-22 8 16 22-20-6 24c6 4 6 12 0 16l-14 6c0 18-4 34-12 46 10 14 16 34 16 64z" fill="#1d1730"/>`, ['#4a3f7a','#120e22']],
+    golem: [`<path d="M78 200v-60l-16-30 20-52h76l20 52-16 30v60z" ${F}/><path d="M96 88h48M86 118l68-6M98 150h46M110 176h24" stroke="#3a3530" stroke-width="5" stroke-linecap="round"/><rect x="98" y="62" width="14" height="10" fill="#d94b1e"/><rect x="128" y="62" width="14" height="10" fill="#d94b1e"/>`, ['#6e6a62','#1e1c18']],
+    idra: [[-60,-30,0,30,60].map((d,i) => `<path d="M120 200C120 160 ${120+d*0.6} 130 ${120+d} ${70+Math.abs(d)*0.4}" ${S(14)}/><circle cx="${120+d}" cy="${62+Math.abs(d)*0.4}" r="13" ${F}/>`).join('') + `<ellipse cx="120" cy="196" rx="44" ry="16" ${F}/>`, ['#2f7a5a','#0a2219']],
+    dinosauro: [`<path d="M120 200c-20 0-30-12-28-28 2-12 10-20 12-28L66 70c-6-10 6-18 14-10l32 50 0-70c0-12 16-12 16 0v70l32-50c8-8 20 0 14 10l-38 74c2 8 10 16 12 28 2 16-8 28-28 28z" ${F}/>`, ['#6a7a2a','#1a2008']],
+  };
+  const RULES = [
+    ['diavolo', /diavolo|^lemure|^imp$|erinni|segugio infernale|gatto infernale|^barghest/i],
+    ['demone', /dretch|quasit|babau|succube|vrock|hezrou|glabrezu|nalfeshnee|marilith|balor|bebilith|vespe infernali/i],
+    ['celestiale', /arconte|deva|planetar|solar|avoral|leonal|ghaele|bralani|lillend|couatl|lammasu/i],
+    ['golem', /golem|guardiano protettore|recuperatore|kolyarut|marut|zelekhut/i],
+    ['idra', /^idra/i],
+    ['licantropo', /^mannaro/i],
+    ['mummia', /mummi/i],
+    ['fantasma', /ombra|spettro|wraith|allip|fantasma|bodak|camminatore notturno|ala notturna|strisciante notturno|divoratore/i],
+    ['drago', /viverna|chimera|dragonne|behir|tartaruga dragona|pseudodrago|drago/i],
+    ['dinosauro', /deinonico|megaraptor|tirannosauro|triceratopo|elasmosauro/i],
+    ['uccello', /aquila|falco|grifone|ippogrifo|^roc$|gufo|pegaso|ieracosfinge|yrthak/i],
+    ['lupo', /lupo|cane|worg|iena|segugio|mastino|krenshar|howler/i],
+    ['orso', /orso/i],
+    ['felino', /leone|tigre|leopardo|gatto|sfinge|girallon|manticora/i],
+    ['acqua', /squalo|orca|polpo|calamaro|kraken|coccodrillo|gatto marino|skum|sahuagin|merfolk|locathah|tritone|aboleth/i],
+    ['serpente', /serpente|naga|lamia/i],
+  ];
+  const famOf = b => { for (const [k, re] of RULES) if (re.test(b.nome)) return k; return null; };
+  const draw = k => { const [m, [a, c]] = M[k], id = 'f' + Object.keys(M).indexOf(k);
+    return `<svg viewBox="0 0 240 240" role="img" aria-label="Illustrazione" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="${id}" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${c}"/></radialGradient></defs><rect width="240" height="240" fill="url(#${id})"/><circle cx="120" cy="120" r="104" fill="none" stroke="${L}" stroke-opacity=".18" stroke-width="2"/>${m}</svg>`; };
+  return {famOf, draw, keys: Object.keys(M)};
+})();
+
+const EMB = (() => {
+  const C = 'fill="none" stroke="#f6ead8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"';
+  const F = 'fill="#f6ead8"';
+  const legs = [-1,1].map(s => [0,1,2,3].map(i => { const y = 104 + i*14, k = i - 1.5; return `<path d="M${120+s*14} ${y} Q${120+s*48} ${y-28+k*6} ${120+s*72} ${y+10+k*18}" ${C}/>`; }).join('')).join('');
+  const toes = [[86,86],[108,70],[132,70],[154,86]].map(([x,y]) => `<ellipse cx="${x}" cy="${y}" rx="13" ry="17" ${F}/>`).join('');
+  const gear = Array.from({length:10}, (_,i) => { const a = i*Math.PI/5; return `<rect x="111" y="46" width="18" height="24" rx="3" ${F} transform="rotate(${i*36} 120 120)"/>`; }).join('');
+  const dots = Array.from({length:34}, (_,i) => { const a = i*0.62, r = 18 + i*2.1; return `<circle cx="${(120+Math.cos(a)*r).toFixed(1)}" cy="${(120+Math.sin(a)*r).toFixed(1)}" r="${(3+i*0.12).toFixed(1)}" ${F}/>`; }).join('');
+  const tent = [-50,-30,-10,10,30,50].map((d,i) => `<path d="M${120+d*0.5} 128 q${d*0.3} 30 ${d} 40 t${d*0.4} 34" ${C} stroke-width="6"/>`).join('');
+  const M = {
+    'Aberrazione': `${tent}<ellipse cx="120" cy="104" rx="56" ry="36" ${F}/><circle cx="120" cy="104" r="22" fill="#5b2a6e"/><ellipse cx="120" cy="104" rx="6" ry="17" fill="#160a1c"/>`,
+    'Animale': `<path d="M120 112c-30 0-50 30-46 50 4 18 26 18 46 12 20 6 42 6 46-12 4-20-16-50-46-50z" ${F}/>${toes}`,
+    'Bestia magica': `<path d="M120 150 C88 120 52 120 34 84 C66 96 84 92 98 104 C92 84 96 70 106 60 C110 84 116 100 120 112 C124 100 130 84 134 60 C144 70 148 84 142 104 C156 92 174 96 206 84 C188 120 152 120 120 150z" ${F}/><path d="M120 170 l7 14 15 2 -11 10 3 15 -14 -7 -14 7 3 -15 -11 -10 15 -2z" ${F}/>`,
+    'Costrutto': `${gear}<circle cx="120" cy="120" r="50" ${F}/><rect x="98" y="98" width="44" height="44" rx="4" fill="#3c4148"/><rect x="110" y="110" width="20" height="20" ${F}/>`,
+    'Elementale': `<path d="M84 104c-22-16-14-40 0-58 2 16 14 20 14 34 6-6 6-14 4-22 16 14 18 38-18 46z" ${F}/><path d="M156 46c14 22 24 36 24 50a24 24 0 0 1-48 0c0-14 10-28 24-50z" ${F}/><path d="M60 178l18-32 28-6 18 22-8 28-34 6z" ${F}/><path d="M178 160a22 22 0 1 1-12-20m-18 22a10 10 0 1 1 12 8" ${C}/>`,
+    'Esterno': `<circle cx="120" cy="120" r="74" ${C} stroke-width="5" stroke-dasharray="4 10"/><path d="M120 50l14 52 52 18-52 18-14 52-14-52-52-18 52-18z" ${F}/><path d="M78 70q-6-26 12-40M162 70q6-26-12-40" ${C}/>`,
+    'Folletto': `<ellipse cx="88" cy="96" rx="36" ry="26" ${F} transform="rotate(-30 88 96)"/><ellipse cx="152" cy="96" rx="36" ry="26" ${F} transform="rotate(30 152 96)"/><ellipse cx="94" cy="148" rx="24" ry="17" ${F} transform="rotate(30 94 148)"/><ellipse cx="146" cy="148" rx="24" ry="17" ${F} transform="rotate(-30 146 148)"/><rect x="114" y="78" width="12" height="96" rx="6" fill="#244a33"/><path d="M116 80q-10-24-22-30M124 80q10-24 22-30" ${C} stroke-width="4"/>`,
+    'Gigante': `<path d="M104 204c-30 0-40-26-36-58 4-30 6-56 22-72 14-14 40-12 50 6 10 18 6 42 2 66-4 26 4 58-38 58z" ${F}/><ellipse cx="88" cy="50" rx="11" ry="13" ${F}/><ellipse cx="111" cy="42" rx="10" ry="12" ${F}/><ellipse cx="131" cy="46" rx="9" ry="11" ${F}/><ellipse cx="147" cy="58" rx="8" ry="9" ${F}/><ellipse cx="158" cy="74" rx="7" ry="8" ${F}/><circle cx="186" cy="150" r="7" ${F}/><path d="M186 160v24M186 184l-8 16M186 184l8 16M174 168h24" stroke="#f6ead8" stroke-width="5" stroke-linecap="round"/>`,
+    'Melma': `<path d="M48 168c0-46 30-92 72-92s72 46 72 92c0 10-8 14-14 8-6 16-18 16-22 2-6 20-22 20-28 4-8 16-24 14-28-2-8 12-22 10-24-4-14 6-28 2-28-8z" ${F}/><circle cx="102" cy="118" r="10" fill="#2f4a1c"/><circle cx="140" cy="132" r="6" fill="#2f4a1c"/><circle cx="122" cy="146" r="4" fill="#2f4a1c"/><circle cx="168" cy="62" r="8" ${C} stroke-width="4"/><circle cx="74" cy="72" r="5" ${C} stroke-width="4"/>`,
+    'Non morto': `<path d="M120 46c-38 0-62 26-62 60 0 22 10 36 24 44v22h76v-22c14-8 24-22 24-44 0-34-24-60-62-60z" ${F}/><ellipse cx="96" cy="112" rx="15" ry="17" fill="#1d1b26"/><ellipse cx="144" cy="112" rx="15" ry="17" fill="#1d1b26"/><path d="M120 128l-9 18h18z" fill="#1d1b26"/><path d="M98 158v14M110 158v14M122 158v14M134 158v14" stroke="#1d1b26" stroke-width="4"/>`,
+    'Parassita': `${legs}<ellipse cx="120" cy="90" rx="22" ry="20" ${F}/><ellipse cx="120" cy="140" rx="30" ry="38" ${F}/><circle cx="112" cy="86" r="4" fill="#3d2414"/><circle cx="128" cy="86" r="4" fill="#3d2414"/><path d="M120 120v40" stroke="#3d2414" stroke-width="4"/>`,
+    'Sciame': dots,
+    'Umanoide': `<path d="M66 130c0-40 24-72 54-72s54 32 54 72v20H66z" ${F}/><rect x="114" y="104" width="12" height="54" fill="#33302a"/><path d="M78 132h30M132 132h30" stroke="#33302a" stroke-width="10" stroke-linecap="round"/><path d="M120 44v-12" ${C}/><path d="M60 196l120-36M60 160l120 36" ${C} stroke-width="6"/>`,
+    'Umanoide mostruoso': `<path d="M84 88C56 84 40 60 44 36c10 18 24 28 44 30zM156 88c28-4 44-28 40-52-10 18-24 28-44 30z" ${F}/><path d="M120 70c-28 0-44 22-44 50 0 22 10 36 18 46 8 12 16 18 26 18s18-6 26-18c8-10 18-24 18-46 0-28-16-50-44-50z" ${F}/><ellipse cx="102" cy="116" rx="8" ry="6" fill="#4a1d14"/><ellipse cx="138" cy="116" rx="8" ry="6" fill="#4a1d14"/><ellipse cx="120" cy="158" rx="18" ry="12" fill="#4a1d14"/><circle cx="112" cy="158" r="3" ${F}/><circle cx="128" cy="158" r="3" ${F}/>`,
+    'Vegetale': `<path d="M66 176C58 110 98 60 176 52c4 78-42 122-110 124z" ${F}/><path d="M70 172C98 136 126 108 168 60M100 140l-6-30M124 116l-4-28M100 140l30-2M124 116l28-4" stroke="#1f3d1a" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M150 196v-22" stroke="#f6ead8" stroke-width="8" stroke-linecap="round"/><path d="M128 176a22 14 0 0 1 44 0z" ${F}/>`,
+  };
+  const BG = {'Aberrazione':['#7a3b8f','#2a1233'],'Animale':['#9a6a32','#3a2410'],'Bestia magica':['#b0603a','#3e1a0f'],'Costrutto':['#6d7680','#23272c'],'Elementale':['#c2701e','#3a1c08'],'Esterno':['#3d6db3','#121f3a'],'Folletto':['#4f9a6a','#163222'],'Gigante':['#8a6b4a','#2e2216'],'Melma':['#6f9a2e','#1f2e0c'],'Non morto':['#5a5873','#16151f'],'Parassita':['#8c5a2e','#2c1709'],'Sciame':['#6a5a48','#201a14'],'Umanoide':['#8a7a5a','#2a2418'],'Umanoide mostruoso':['#a2452c','#33120a'],'Vegetale':['#4f7f2e','#16280b']};
+  return t => { const [a,b] = BG[t] || ['#777','#222'], id = 'g' + Object.keys(BG).indexOf(t);
+    return `<svg viewBox="0 0 240 240" role="img" aria-label="Illustrazione: ${t}" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="${id}" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient></defs><rect width="240" height="240" fill="url(#${id})"/><circle cx="120" cy="120" r="104" fill="none" stroke="#f6ead8" stroke-opacity=".18" stroke-width="2"/><g>${M[t] || ''}</g></svg>`; };
+})();
+
+const TIPI = [...new Set(B.map(b=>b.tipo))].sort(), AMB = ZONE.map(z=>z[0]);
+const FORME = [['capo','Capo e gregari'],['due','Due gruppi'],['trio','Tre specie']];
+const DIFF = [['Facile',-1],['Adatto',0],['Impegnativo',1],['Molto pericoloso',3]];
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = {view:'gruppo', db:null, canWrite:true, eroi:[{nome:'Eroe 1',pe:0},{nome:'Eroe 2',pe:0},{nome:'Eroe 3',pe:0},{nome:'Eroe 4',pe:0}],
+  inc:{nome:'',note:'',voci:[]}, saved:{}, q:'', fTipo:'', fAmb:'', gsMin:'', gsMax:'', gen:{diff:'Adatto',n:2,tipo:'',amb:'',mode:'singola',forma:'capo',affini:true}, pick:null, sort:'gs', imgs:{}, master:false, mix:null, tab:null, roll:null};
+try { const d = JSON.parse(localStorage.getItem('sala-bozza')||'null'); if (d) S.inc = d; } catch(_) {}
+try { S.master = sessionStorage.getItem('tavolo-master') === '1'; } catch(_) {}
+const ED = () => S.master && S.canWrite;
+const MHASH = 'a8cbcac0410cd8074f92bb7f98443ac92bc0a0665d0212aa9c619e62e607027c';
+
+// ---------- regole
+const livello = pe => Math.min(20, Math.floor((1 + Math.sqrt(1 + 8 * Math.max(0, Number(pe)||0) / 1000)) / 2));
+const peLivello = l => l*(l-1)/2*1000;
+const partyLevel = () => { const ls = S.eroi.map(e=>livello(e.pe)); return ls.length ? Math.round(ls.reduce((a,b)=>a+b,0)/ls.length) : 1; };
+const gsTxt = g => g>=1 ? String(g) : g>0.45 ? '1/2' : g>0.3 ? '1/3' : g>0.2 ? '1/4' : g>0.15 ? '1/6' : '1/8';
+const eqGs = g => g >= 1 ? g : 1 + 2*Math.log2(g);            // GS frazionari: due GS 1/2 = GS 1
+const bonusN = n => n<=1?0 : n<=4?n : n<=6?5 : n<=9?6 : n<=12?7 : 8;
+function encounterLevel(voci){
+  const tot = voci.reduce((s,v)=>s + v.n * Math.pow(2, eqGs(v.gs)/2), 0);
+  if (!tot) return null;
+  return Math.round(2*Math.log2(tot));
+}
+function difficulty(el){
+  if (el == null) return null;
+  const d = el - partyLevel();
+  return d < 0 ? ['Facile',0] : d === 0 ? ['Adatto',1] : d <= 2 ? ['Impegnativo',2] : d <= 4 ? ['Molto pericoloso',3] : ['Quasi impossibile',4];
+}
+function neededGs(diff, n){
+  const li = partyLevel() + (DIFF.find(d=>d[0]===diff)||DIFF[1])[1];
+  const g = li - bonusN(n);
+  return {li, gs: g >= 1 ? g : g === 0 ? 0.5 : g === -1 ? 1/3 : g === -2 ? 0.25 : 0.125};
+}
+const same = (a,b) => Math.abs(a-b) < 0.02;
+
+// ---------- generatore misto
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const gsFor = g => g >= 1 ? g : g === 0 ? 0.5 : g === -1 ? 1/3 : g === -2 ? 0.25 : 0.125;
+const targetLi = diff => Math.max(1, partyLevel() + (DIFF.find(d=>d[0]===diff)||DIFF[1])[1]);
+const poolOf = (tipo, amb) => B.filter(b => (!tipo || b.tipo===tipo) && inZona(b, amb));
+const affine = (list, c) => { const a = list.filter(b => b.tipo===c.tipo || (c.zone!=='*' && [...c.zone].some(z=>b.zone.includes(z)))); return a.length ? a : list; };
+const toVoci = arr => arr.map(([b,n]) => ({id:b.id, nome:b.nome, gs:b.gs, n}));
+function single(li, pool){
+  for (const n of [ri(1,6), ri(1,4), 1, 2, 3, 4, 6, 8]) {
+    const gs = gsFor(li - bonusN(n)), l = pool.filter(b => same(b.gs, gs));
+    if (l.length) return toVoci([[rnd(l), n]]);
+  }
+  return null;
+}
+function mixed(forma, li, pool, aff){
+  const band = (lo, hi) => pool.filter(b => { const e = eqGs(b.gs); return e >= lo && e <= hi; });
+  for (let t = 0; t < 3000; t++) {
+    let arr;
+    if (forma === 'capo') {
+      const caps = band(li-3, li-1); if (!caps.length) return null;
+      const c = rnd(caps); let g = pool.filter(b => b.id !== c.id && eqGs(b.gs) <= eqGs(c.gs) - 2);
+      if (aff) g = affine(g, c); if (!g.length) continue;
+      arr = [[c,1],[rnd(g), ri(2,8)]];
+    } else {
+      const k = forma === 'due' ? 2 : 3, p = band(li - 9, li - (k===2?2:3)); if (p.length < k) return null;
+      const a = rnd(p); arr = [[a, ri(1, k===2?6:4)]];
+      while (arr.length < k) { let q = p.filter(b => !arr.some(([x]) => x.id === b.id)); if (aff) q = affine(q, a); arr.push([rnd(q), ri(1, k===2?6:4)]); }
+    }
+    const v = toVoci(arr); if (encounterLevel(v) === li) return v;
+  }
+  return null;
+}
+function makeMix(){
+  const g = S.gen, li = targetLi(g.diff), pool = poolOf(g.tipo, g.amb), out = [];
+  for (let i = 0; i < 12 && out.length < 3; i++) { const v = mixed(g.forma, li, pool, g.affini); if (v && !out.some(o => JSON.stringify(o)===JSON.stringify(v))) out.push(v); }
+  S.mix = out;
+}
+const TAB = [[1,'Facile',-2],[2,'Facile',-1],[3,'Adatto',0],[4,'Adatto',0],[5,'Adatto',0],[6,'Impegnativo',1],[7,'Impegnativo',2],[8,'Molto pericoloso',3]];
+function makeTab(){
+  const pool = poolOf('', S.gen.amb), own = S.gen.amb ? B.filter(b => b.zone.includes(S.gen.amb)) : pool, pl = partyLevel();
+  S.roll = null;
+  S.tab = TAB.map(([d,lab,off]) => {
+    const li = Math.max(1, pl + off), forma = rnd(['single','single','capo','due']);
+    const v = (forma === 'single' ? single(li, own) : mixed(forma, li, own, true)) || single(li, own) || (forma === 'single' ? single(li, pool) : mixed(forma, li, pool, true)) || single(li, pool) || mixed('capo', li, pool, true);
+    return {d, lab, li, voci: v};
+  });
+}
+
+// ---------- salvataggio
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.k); toast.k=setTimeout(()=>t.classList.remove('on'),2000); }
+let qw = Promise.resolve();
+function save(path, data){
+  if (!S.db || !S.canWrite) return;
+  qw = qw.then(() => data === null ? S.db.doc(path).delete() : S.db.doc(path).set(data)).catch(e => { console.error(e); if (e && e.code==='invalid_argument'){ S.canWrite=false; toast('Solo il Master può salvare'); } else toast('Salvataggio non riuscito'); });
+}
+let gt; function saveGroup(){ clearTimeout(gt); gt = setTimeout(()=>save('stato/gruppo', {eroi:S.eroi}), 600); }
+function saveDraft(){ try { localStorage.setItem('sala-bozza', JSON.stringify(S.inc)); } catch(_) {} }
+
+// ---------- viste
+function render(){
+  for (const a of document.querySelectorAll('#nav a')) a.classList.toggle('on', a.dataset.v===(S.view==='mostro'||S.view==='immagini'?'bestiario':S.view==='pgscheda'?'pg':S.view));
+  $('#pl').innerHTML = `Livello del gruppo <b>${partyLevel()}</b> · ${S.eroi.length} eroi`;
+  document.body.classList.toggle('ed', ED());
+  $('#mbtn').textContent = S.master ? '← Menu · Master' : '← Menu';
+  $('#mbtn').classList.toggle('on', S.master);
+  const keep = {}, act = document.activeElement && document.activeElement.id;
+  for (const el of document.querySelectorAll('#work input[id]:not([type=file]), #work textarea[id]')) keep[el.id] = [el.value, el.selectionStart];
+  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
+  for (const [id,[v,p]] of Object.entries(keep)) { const el = document.getElementById(id); if (el && el.type!=='number') { el.value = v; } }
+  if (act) { const el = document.getElementById(act); if (el) { el.focus(); try { if (keep[act]) el.setSelectionRange(keep[act][1], keep[act][1]); } catch(_){} } }
+  $('#side').innerHTML = sideView();
+}
+
+function groupView(){
+  const pl = partyLevel();
+  return `<div class="card"><h2>Il gruppo</h2><p class="muted">Scrivi i punti esperienza di ogni eroe: il livello e il livello del gruppo si calcolano da soli (tabella dei PE della 3.5).</p>
+  ${S.eroi.map((e,i)=>{ const l = livello(e.pe), next = l<20 ? peLivello(l+1)-(Number(e.pe)||0) : 0;
+    return `<div class="hero"><div><label for="hn${i}">Eroe</label><input id="hn${i}" data-h="${i}" data-k="nome" value="${esc(e.nome)}" ${ED()?'':'readonly'}></div>
+    <div><label for="hp${i}">Punti esperienza</label><input id="hp${i}" data-h="${i}" data-k="pe" inputmode="numeric" value="${esc(e.pe)}" ${ED()?'':'readonly'}></div>
+    <div><label>Livello</label><div class="lv">${l}</div></div>
+    <div class="mancano"><label>Al prossimo livello</label><div>${l<20?next.toLocaleString('it-IT')+' PE':'—'}</div></div>
+    <button class="sm" data-act="delh" data-i="${i}" aria-label="Togli ${esc(e.nome)}" ${S.eroi.length<=1?'disabled':''}>✕</button></div>`; }).join('')}
+  <div class="row" style="margin-top:12px"><button data-act="addh">Aggiungi un eroe</button></div></div>
+  <div class="card edonly"><h3>Assegna punti esperienza</h3><p class="muted">Dopo uno scontro o una sessione: aggiungi gli stessi PE a tutti gli eroi.</p>
+  <div class="row"><input id="addpe" inputmode="numeric" placeholder="Per esempio 300" style="max-width:220px"><button class="pri" data-act="addpe">Aggiungi a tutti</button></div></div>
+  <div class="card"><h3>Livello del gruppo: ${pl}</h3><p class="muted">Media dei livelli, arrotondata. Il Livello di Incontro (LI) adatto a questo gruppo è ${pl}${S.eroi.length!==4?`. Il gruppo standard è di 4 eroi: con ${S.eroi.length} eroi lo stesso LI risulta ${S.eroi.length>4?'un po\' più facile':'un po\' più difficile'}`:''}.</p></div>`;
+}
+
+const nm = id => `<a class="lnk" href="#m-${id}">${esc(B[id].nome)}</a>`;
+const vociHtml = v => `<ul>${v.map(x=>`<li>${x.n} × ${nm(x.id)} <span class="muted">GS ${gsTxt(x.gs)}</span></li>`).join('')}</ul>`;
+const filtri = (g, withN) => `<div class="grid4"><div><label for="g-diff">Difficoltà</label><select id="g-diff" data-g="diff">${DIFF.map(([d])=>`<option ${g.diff===d?'selected':''}>${d}</option>`).join('')}</select></div>
+  ${withN ? `<div><label for="g-n">Quante creature</label><select id="g-n" data-g="n">${Array.from({length:12},(_,i)=>`<option ${g.n===i+1?'selected':''}>${i+1}</option>`).join('')}</select></div>`
+          : `<div><label for="g-f">Forma</label><select id="g-f" data-g="forma">${FORME.map(([k,l])=>`<option value="${k}" ${g.forma===k?'selected':''}>${l}</option>`).join('')}</select></div>`}
+  <div><label for="g-tipo">Tipo</label><select id="g-tipo" data-g="tipo"><option value="">Qualsiasi</option>${TIPI.map(t=>`<option ${g.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div><label for="g-amb">Luogo</label><select id="g-amb" data-g="amb"><option value="">Qualsiasi</option>${zoneOpt(g.amb)}</select></div></div>`;
+
+function genView(){
+  const g = S.gen;
+  const seg = `<div class="seg" role="group" aria-label="Modalità">${[['singola','Una specie'],['misto','Misto'],['tabella',"Tabella del luogo"]].map(([k,l])=>`<button data-act="mode" data-m="${k}" class="${g.mode===k?'on':''}" aria-pressed="${g.mode===k}">${l}</button>`).join('')}</div>`;
+  if (g.mode === 'misto') return mixView(seg);
+  if (g.mode === 'tabella') return tabView(seg);
+  const {li, gs} = neededGs(g.diff, g.n);
+  const list = poolOf(g.tipo, g.amb).filter(b => same(b.gs, gs));
+  const pick = S.pick != null ? B[S.pick] : null;
+  return `<div class="card"><h2>Generatore di incontri</h2>${seg}${filtri(g, true)}
+  <p style="margin:14px 0 6px">Gruppo di livello <b>${partyLevel()}</b> → LI obiettivo <b>${li}</b> → ${g.n} creatur${g.n>1?'e':'a'} di <b>GS ${gsTxt(gs)}</b>${g.n>1?' ciascuna':''}.</p>
+  <div class="row"><button class="pri" data-act="rand" ${list.length?'':'disabled'}>Scegli a caso</button><span class="muted">${list.length} creature adatte</span></div>
+  ${pick ? `<div class="cand" style="margin-top:12px;border-color:var(--brace)"><b>${g.n} × ${nm(pick.id)}</b><span class="muted">${esc(pick.en)} · GS ${gsTxt(pick.gs)} · ${esc(pick.tipo)} · ${esc(pick.amb)}</span>${statLine(pick)}<div class="row" style="margin-top:8px"><button class="sm pri" data-act="add" data-id="${pick.id}" data-n="${g.n}">Aggiungi all'incontro</button></div></div>`:''}</div>
+  <div class="card"><h3>Tutte le creature adatte</h3>${list.length ? `<div class="cands">${list.map(b=>`<div class="cand">${nm(b.id)}<span class="muted">${esc(b.en)} · ${esc(b.tipo)} · ${esc(b.amb)}</span>${statLine(b)}<div class="row" style="margin-top:6px"><button class="sm" data-act="add" data-id="${b.id}" data-n="${g.n}">Aggiungi ${g.n}</button></div></div>`).join('')}</div>`
+    : `<p class="empty">Nessuna creatura con GS ${gsTxt(gs)} per questi filtri. Prova con una creatura in più o in meno, o togli un filtro.</p>`}</div>`;
+}
+
+function mixView(seg){
+  const g = S.gen, li = targetLi(g.diff);
+  const forma = {capo:'un capo più forte e un gruppo di gregari più deboli', due:'due specie diverse in numero variabile', trio:'tre specie diverse, poche per tipo'}[g.forma];
+  return `<div class="card"><h2>Generatore misto</h2>${seg}${filtri(g, false)}
+  <label class="chk"><input type="checkbox" data-g="affini" ${g.affini?'checked':''}> Creature affini: stesso tipo o stesso luogo della prima</label>
+  <p style="margin:8px 0">Gruppo di livello <b>${partyLevel()}</b> → LI obiettivo <b>${li}</b>: ${forma}.</p>
+  <div class="row"><button class="pri" data-act="mix">${S.mix?'Altre proposte':'Proponi tre incontri'}</button></div></div>
+  ${S.mix ? `<div class="card"><h3>Proposte</h3>${S.mix.length ? S.mix.map((v,k)=>`<div class="prop"><div class="row" style="justify-content:space-between"><b>Proposta ${k+1}</b><span><b>LI ${encounterLevel(v)}</b> <span class="badge d${difficulty(encounterLevel(v))[1]}">${difficulty(encounterLevel(v))[0]}</span></span></div>${vociHtml(v)}<button class="sm pri" data-act="addmix" data-k="${k}">Aggiungi all'incontro</button></div>`).join('')
+    : `<p class="empty">Non trovo combinazioni che diano LI ${li} con questi filtri. Togli un filtro, cambia forma o difficoltà.</p>`}</div>` : ''}`;
+}
+
+function tabView(seg){
+  const g = S.gen;
+  return `<div class="card"><h2>Tabella del luogo</h2>${seg}
+  <div class="grid4"><div><label for="g-amb">Luogo</label><select id="g-amb" data-g="amb"><option value="">Qualsiasi</option>${zoneOpt(g.amb)}</select></div></div>
+  <p class="muted" style="margin:10px 0">Una tabella d8 di incontri casuali per un gruppo di livello ${partyLevel()}: due facili, tre adatti, due impegnativi e uno molto pericoloso. Include le creature che vivono ovunque.</p>
+  <div class="row"><button class="pri" data-act="tab">${S.tab?'Nuova tabella':'Crea la tabella'}</button>${S.tab?`<button data-act="roll">Tira 1d8</button>`:''}${S.roll?`<span class="badge d2">Uscito ${S.roll}</span>`:''}</div></div>
+  ${S.tab ? `<div class="card scroll"><table class="d8"><thead><tr><th>d8</th><th>Incontro</th><th class="n">LI</th><th></th></tr></thead><tbody>${S.tab.map((r,k)=>`<tr class="${S.roll===r.d?'hit':''}"><td>${r.d}</td><td>${r.voci ? r.voci.map(x=>`${x.n} × ${nm(x.id)}`).join(', ') : '<span class="muted">Nessuna combinazione adatta</span>'}<span class="mini">${r.lab}</span></td><td class="n">${r.voci?encounterLevel(r.voci):'—'}</td><td class="n">${r.voci?`<button class="sm" data-act="addtab" data-k="${k}" aria-label="Aggiungi la riga ${r.d} all'incontro">+</button>`:''}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+}
+
+const sOf = b => { if (b.fonte) { const c = (S.schede||{})['m'+b.id] || {}; const o = {}; for (const k of SK) o[k] = c[k] || (k==='taglia' ? b.taglia : ''); return o; } const s = ST[b.en]; return s ? {taglia:s[0], dv:s[1], ini:s[2], vel:s[3], ca:s[4], att:s[5], sp:s[6], ts:s[7], al:s[8], spazio:s[9], bab:s[10], car:s[11], abil:s[12], tal:s[13], org:s[14], tes:s[15], av:s[16]} : null; };
+const pfOf = s => { const m = /\(([^)]*)\)\s*$/.exec(s.dv); return m ? m[1] : s.dv; };
+const statLine = b => { const s = sOf(b); return s && s.ca ? `<span class="stat">CA ${esc(s.ca)} · PF ${esc(pfOf(s))} · Iniz ${esc(s.ini)}</span>` : ''; };
+function openSheet(id){
+  const b = B[id], s = sOf(b), v = $('#veil');
+  const rows = s ? [['Taglia e tipo', `${s.taglia} · ${b.tipo}`],['Dadi Vita (PF)', s.dv],['Iniziativa', s.ini],['Velocità', s.vel],['Classe Armatura', s.ca],['Attacchi', s.att],['Capacità speciali', s.sp],['Tiri salvezza', s.ts.replace('T','Temp ').replace(' R',' · Rifl ').replace(' V',' · Vol ')],['Luogo', b.amb]] : [];
+  $('#sheet').innerHTML = `<div class="row" style="justify-content:space-between;align-items:start"><div><h2 id="sh-t" style="margin:0">${esc(b.nome)}</h2><span class="muted">${esc(b.en)} · GS ${gsTxt(b.gs)}</span></div><button class="sm" data-act="close" aria-label="Chiudi la scheda">✕</button></div>
+  <dl>${rows.map(([k,x])=>`<dt>${k}</dt><dd>${esc(x)}</dd>`).join('')}</dl>
+  <p class="muted" style="font-size:14px;margin:0 0 12px">Sintesi dal Documento di Riferimento del Sistema 3.5. Caratteristiche, abilità, talenti, organizzazione e tesoro sono nella pagina completa.</p>
+  <div class="row"><a class="btnl" href="#m-${b.id}" data-act="close">Scheda completa</a><button class="pri" data-act="add" data-id="${b.id}" data-n="1">Aggiungi 1 all'incontro</button><button data-act="close">Chiudi</button></div>`;
+  S.back = document.activeElement; v.hidden = false; $('#sheet [data-act=close]').focus();
+}
+function closeSheet(){ $('#veil').hidden = true; if (S.back && document.contains(S.back)) S.back.focus(); }
+
+function bestView(){
+  const q = S.q.trim().toLowerCase(), lo = S.gsMin===''?-1:Number(S.gsMin), hi = S.gsMax===''?99:Number(S.gsMax);
+  let list = B.filter(b => (!q || b.nome.toLowerCase().includes(q) || b.en.toLowerCase().includes(q)) && (!S.fTipo || b.tipo===S.fTipo) && inZona(b, S.fAmb) && b.gs >= lo - 0.01 && b.gs <= hi + 0.01);
+  list = list.sort(S.sort==='nome' ? (a,b)=>a.nome.localeCompare(b.nome,'it') : (a,b)=>a.gs-b.gs || a.nome.localeCompare(b.nome,'it'));
+  return `<div class="card"><h2>Bestiario</h2><p class="muted">${B.length} creature dal Documento di Riferimento del Sistema 3.5 (la parte libera del <i>Manuale dei Mostri</i>). Tocca un nome per aprire la sua scheda completa.${ED()?' <a href="#immagini">Carica immagini in blocco</a>.':''} Mancano i draghi e i modelli (fantasma, lich, vampiro): per quelli vedi il manuale.</p>
+  <div class="grid4"><div><label for="b-q">Cerca</label><input id="b-q" data-b="q" value="${esc(S.q)}" placeholder="Nome italiano o inglese"></div>
+  <div><label for="b-t">Tipo</label><select id="b-t" data-b="fTipo"><option value="">Tutti</option>${TIPI.map(t=>`<option ${S.fTipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div><label for="b-a">Luogo</label><select id="b-a" data-b="fAmb"><option value="">Tutti</option>${zoneOpt(S.fAmb)}</select></div>
+  <div class="row" style="align-items:end;flex-wrap:nowrap"><div><label for="b-lo">GS da</label><input id="b-lo" data-b="gsMin" inputmode="numeric" value="${esc(S.gsMin)}"></div><div><label for="b-hi">a</label><input id="b-hi" data-b="gsMax" inputmode="numeric" value="${esc(S.gsMax)}"></div></div></div>
+  <p class="muted" style="margin:10px 0 0">${list.length} risultati · ordina per <button class="sm" data-act="sort" data-s="gs" ${S.sort==='gs'?'disabled':''}>GS</button> <button class="sm" data-act="sort" data-s="nome" ${S.sort==='nome'?'disabled':''}>nome</button></p></div>
+  <div class="card scroll"><table><thead><tr><th>Creatura</th><th class="n">GS</th><th>Tipo</th><th>Luogo</th><th></th></tr></thead><tbody>
+  ${list.slice(0,200).map(b=>`<tr><td>${nm(b.id)}<br><span class="muted">${esc(b.en)}</span><br>${statLine(b)}</td><td class="n">${gsTxt(b.gs)}</td><td>${esc(b.tipo)}</td><td>${esc(b.amb)}</td><td class="n"><button class="sm" data-act="add" data-id="${b.id}" data-n="1" aria-label="Aggiungi ${esc(b.nome)} all'incontro">+</button></td></tr>`).join('')}
+  </tbody></table>${list.length>200?'<p class="muted">Mostro le prime 200: restringi la ricerca.</p>':''}<p class="mini" style="margin-top:12px">Crediti immagini: illustrazioni CC0 di LadyofHats (Wikimedia Commons); opere di pubblico dominio di vari autori; eventuali ritratti di Justin Nichol (opengameart.org), licenza CC BY / CC BY-SA. Illustrazioni per tipo e famiglia originali della Sala d'Armi.</p>${!list.length?'<p class="empty">Nessuna creatura trovata.</p>':''}</div>`;
+}
+
+const ORD = [...B].sort((a,b)=>a.gs-b.gs || a.nome.localeCompare(b.nome,'it')).map(b=>b.id);
+const tsTxt = s => s.replace('T','Temp ').replace(' R',', Rifl ').replace(' V',', Vol ');
+function monsterView(){
+  const b = B[S.mid], s = sOf(b), k = ORD.indexOf(b.id), prev = B[ORD[k-1]], next = B[ORD[k+1]];
+  if (!s) return `<div class="card"><h2>${esc(b.nome)}</h2><p class="empty">Carico la scheda…</p></div>`;
+  const rows = [['Taglia e tipo', `${s.taglia} · ${b.tipo}`],['Dadi Vita', s.dv],['Iniziativa', s.ini],['Velocità', s.vel],['Classe Armatura', s.ca],
+    ['Attacco base/Lotta', s.bab],['Attacco completo', s.att],['Spazio/Portata', s.spazio],['Attacchi e qualità speciali', s.sp],['Tiri salvezza', tsTxt(s.ts)],
+    ['Caratteristiche', s.car],['Abilità', s.abil],['Talenti', s.tal],['Luogo', b.amb],['Organizzazione', s.org],['Grado di Sfida', gsTxt(b.gs)],
+    ['Tesoro', s.tes],['Allineamento', s.al],['Avanzamento', s.av]];
+  return `<div class="card mon">
+  <div class="row" style="justify-content:space-between"><a class="back" href="#bestiario">← Bestiario</a>
+    <span class="row">${prev?`<a class="btnl sm2" href="#m-${prev.id}" aria-label="Creatura precedente: ${esc(prev.nome)}">‹ ${esc(prev.nome)}</a>`:''}${next?`<a class="btnl sm2" href="#m-${next.id}" aria-label="Creatura successiva: ${esc(next.nome)}">${esc(next.nome)} ›</a>`:''}</span></div>
+  <div class="mhead"><div><h2 style="margin:10px 0 2px">${esc(b.nome)}</h2><span class="muted">${esc(b.en)} · ${esc(s.taglia)} ${esc(b.tipo.toLowerCase())}</span>${b.fonte?`<br><span class="badge">${esc(b.fonte)} · p. ${b.pag}</span>`:''}</div>
+    <div class="gsbox"><span>GS</span><b>${gsTxt(b.gs)}</b></div></div>
+  <div class="mtop"><figure class="pic" id="pic" data-id="${b.id}">${S.imgs['m'+b.id] ? `<img src="${esc(S.imgs['m'+b.id])}" alt="${esc(b.nome)}">` : FAM.famOf(b) ? FAM.draw(FAM.famOf(b)) : EMB(b.tipo)}
+    <figcaption>${S.imgs['m'+b.id] ? 'Immagine caricata' : 'Illustrazione originale'}</figcaption></figure>
+    <div><div class="quick"><div><span>CA</span><b>${esc(s.ca)}</b></div><div><span>PF</span><b>${esc(pfOf(s))}</b></div><div><span>Iniz</span><b>${esc(s.ini)}</b></div><div><span>TS</span><b>${esc(s.ts.replace(/ /g,' · '))}</b></div></div>
+    ${ED() ? `<div class="row"><label class="btnl up" for="up-img">${S.imgs['m'+b.id]?'Cambia immagine':'Carica un\'immagine'}</label><input type="file" id="up-img" accept="image/*" data-up="${b.id}" hidden>${S.imgs['m'+b.id]?`<button class="sm" data-act="delimg" data-id="${b.id}">Rimuovi</button>`:''}</div><p class="muted" style="font-size:13px;margin:6px 0 0">Oppure trascinala sul riquadro. La vedranno tutti quelli che aprono la Sala d'Armi.</p>` : ''}</div></div>
+  ${b.fonte && ED() && S.edsch===b.id ? schForm(b, s) : `<table class="sb"><tbody>${rows.map(([l,v])=>`<tr><th scope="row">${l}</th><td>${v ? esc(v) : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`}
+  ${b.fonte && ED() && S.edsch!==b.id ? `<div class="row" style="margin-top:10px"><button data-act="editsch" data-id="${b.id}">Compila la scheda</button></div>` : ''}
+  <div class="row" style="margin-top:14px"><button class="pri" data-act="add" data-id="${b.id}" data-n="1">Aggiungi 1 all'incontro</button><button data-act="add" data-id="${b.id}" data-n="4">Aggiungi 4</button></div>
+  ${b.fonte ? `<p class="muted" style="font-size:14px;margin:12px 0 0">Creatura del <i>${esc(b.fonte)}</i>, pagina ${b.pag}. Qui ci sono solo nome, GS, tipo e ambiente: la scheda la compila il master con i dati del suo manuale.</p>` : `<p class="muted" style="font-size:14px;margin:12px 0 0">Dati di gioco dal Documento di Riferimento del Sistema 3.5, riassunti in italiano. Per descrizione, tattiche e dettagli delle capacità vedi il <i>Manuale dei Mostri</i>.</p>`}</div>`;
+}
+function schForm(b, s){
+  return `<form id="schform" data-id="${b.id}" class="schf"><h3 style="margin:14px 0 8px">Compila la scheda</h3>
+  ${['taglia','dv','ini','vel','ca','bab','att','spazio','sp','ts','car','abil','tal','org','tes','al','av'].map(k=>`<label for="sk-${k}">${SKL[k]}</label>${['sp','att','abil','tal','av'].includes(k) ? `<textarea id="sk-${k}" name="${k}" rows="2">${esc(s[k])}</textarea>` : `<input id="sk-${k}" name="${k}" value="${esc(s[k])}">`}`).join('')}
+  <div class="row" style="margin-top:12px"><button class="pri" type="submit">Salva la scheda</button><button type="button" data-act="cancsch">Annulla</button></div></form>`;
+}
+
+function suggView(){
+  const fp = f => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f);
+  const pg = f => 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(f);
+  return `<div class="card"><h3>Immagini libere suggerite</h3>
+  <p class="muted" style="margin-top:0">${SUGG.length} immagini da Wikimedia Commons, di pubblico dominio o CC0: si possono usare senza citare l'autore. Scaricale con «Scarica» senza rinominarle: quando le carichi qui sopra si abbinano da sole. Prima di usarle controlla la licenza sulla pagina del file.</p>
+  <div class="scroll"><table><thead><tr><th>Mostro</th><th>Fonte e licenza</th><th></th></tr></thead><tbody>
+  ${SUGG.map(s=>`<tr><td>${nm(s.id)}</td><td><span class="mini">${esc(s.file)}</span>${esc(s.lic)}</td><td class="n"><a class="btnl sm2" href="${fp(s.file)}" target="_blank" rel="noopener">Scarica</a> <a href="${pg(s.file)}" target="_blank" rel="noopener">Pagina</a></td></tr>`).join('')}
+  </tbody></table></div>
+  <h3 style="margin-top:18px">Pacchetti di illustrazioni libere</h3>
+  <p class="muted" style="margin-top:0">Ritratti fantasy dipinti di Justin Nichol (OpenGameArt). Scarica lo .zip e caricalo qui sopra: i nomi dei file sono in inglese e generici, quindi abbinali con «Abbina uno per uno». Licenza Creative Commons con obbligo di citare l'autore: i crediti sono già nel Bestiario.</p>
+  <ul>${PACKS.map(p=>`<li><a href="${p[1]}" target="_blank" rel="noopener">${esc(p[0])}</a> <span class="muted">· ${esc(p[2])}</span></li>`).join('')}</ul></div>`;
+}
+
+function bulkView(){
+  if (!ED()) return `<div class="card"><h2>Carica immagini in blocco</h2><p class="muted">Serve la modalità Master: torna al menu principale ed entra come Master.</p></div>`;
+  const L = S.bulk || [], ok = L.filter(x => x.id != null).length;
+  return `<div class="card"><a class="back" href="#bestiario">← Bestiario</a><h2 style="margin-top:6px">Carica immagini in blocco</h2>
+  <p class="muted">Scegli più immagini, una cartella o un file .zip. Abbino i file ai mostri dal nome (italiano o inglese, per esempio <i>troll.jpg</i> o <i>owlbear.png</i>); tu controlli e correggi, poi salvi tutto insieme.</p>
+  <div class="dropz" id="bulkdrop"><p style="margin:0 0 10px">Trascina qui immagini o un .zip</p>
+  <div class="row" style="justify-content:center"><label class="btnl up" for="bk-files">Scegli immagini o .zip</label><input type="file" id="bk-files" data-bulkin="1" accept="image/*,.zip" multiple hidden>
+  <label class="btnl up" for="bk-dir">Scegli una cartella</label><input type="file" id="bk-dir" data-bulkin="1" webkitdirectory multiple hidden></div></div>
+  <p id="bulkst" class="muted" style="margin:10px 0 0" aria-live="polite">${L.length ? `${L.length} immagini pronte: ${ok} abbinate, ${L.length-ok} da abbinare.` : ''}</p>
+  ${L.length ? `<div class="row" style="margin-top:10px"><button class="pri" data-act="bulksave" ${ok?'':'disabled'}>Salva ${ok} immagin${ok===1?'e':'i'}</button><button data-act="bulkclear">Svuota l'elenco</button></div>` : ''}</div>
+  ${L.length && S.fast != null ? fastView() : ''}
+  ${L.length && S.fast == null ? `<div class="card"><h3>Abbinamenti</h3><button class="pri" data-act="faston" style="margin-bottom:10px">Abbina uno per uno, da tastiera</button><p class="muted" style="margin-top:0">Scrivi il nome del mostro per correggere un abbinamento; i file senza mostro non vengono salvati.</p>
+  <datalist id="mlist">${[...B].sort((a,c)=>a.nome.localeCompare(c.nome,'it')).map(b=>`<option value="${esc(b.nome)}">`).join('')}</datalist>
+  ${L.map((x,i)=>`<div class="bk ${x.id==null?'miss':''}"><img src="${x.src}" alt=""><div><span class="mini">${esc(x.name)}</span>
+    <input list="mlist" data-bk="${i}" value="${x.id!=null?esc(B[x.id].nome):''}" placeholder="Nome del mostro" aria-label="Mostro per ${esc(x.name)}"></div>
+    ${x.id!=null?`<button class="sm" data-act="bulkskip" data-i="${i}" aria-label="Non usare ${esc(x.name)}">✕</button>`:'<span class="badge d3">Da abbinare</span>'}</div>`).join('')}</div>` : ''}${suggView()}`;
+}
+
+function sugg(q){
+  const n = norm(q); if (!n) return [];
+  const pre = [], mid = [];
+  for (const b of B) { const a = norm(b.nome), e = norm(b.en); if (a.startsWith(n) || e.startsWith(n)) pre.push(b); else if (a.includes(n) || e.includes(n)) mid.push(b); }
+  return [...pre.sort((x,y)=>x.nome.length-y.nome.length), ...mid].slice(0, 6);
+}
+function fastView(){
+  const L = S.bulk, i = Math.min(S.fast, L.length-1), x = L[i], done = L.filter(y => y.id != null).length;
+  return `<div class="card fast"><div class="row" style="justify-content:space-between"><b>File ${i+1} di ${L.length}</b><span class="muted">${done} abbinati</span></div>
+  <div class="fastgrid"><img src="${x.src}" alt="Immagine ${i+1}"><div>
+    <span class="mini">${esc(x.name)}</span>
+    ${x.id != null ? `<p style="margin:4px 0 10px">Ora: <b>${esc(B[x.id].nome)}</b></p>` : '<p class="muted" style="margin:4px 0 10px">Non ancora abbinato</p>'}
+    <label for="fastin">Mostro</label><input id="fastin" autocomplete="off" placeholder="Scrivi le prime lettere, poi Invio" aria-describedby="fasthelp">
+    <div id="fastsug" class="sug" role="listbox"></div>
+    <p id="fasthelp" class="muted" style="font-size:13px;margin:8px 0">Invio abbina il primo suggerimento e passa al file dopo. Frecce su e giù per scegliere, Esc per saltare.</p>
+    <div class="row"><button class="sm" data-act="fastmove" data-d="-1" ${i?'':'disabled'}>‹ Indietro</button><button class="sm" data-act="fastmove" data-d="1">Salta ›</button>${x.id!=null?`<button class="sm" data-act="fastclear">Togli abbinamento</button>`:''}<button class="sm" data-act="fastoff">Vedi l'elenco</button></div>
+  </div></div></div>`;
+}
+function fastPaint(){
+  const inp = $('#fastin'), box = $('#fastsug'); if (!inp || !box) return;
+  S.sug = sugg(inp.value); S.sel = Math.min(S.sel || 0, Math.max(0, S.sug.length-1));
+  box.innerHTML = S.sug.map((b,k)=>`<button class="sm ${k===S.sel?'on':''}" data-act="fastpick" data-id="${b.id}" role="option" aria-selected="${k===S.sel}">${esc(b.nome)} <span class="muted">${esc(b.en)}</span></button>`).join('');
+}
+function fastGo(d){
+  const L = S.bulk; let i = S.fast + d;
+  if (d > 0) { let k = i; while (k < L.length && L[k].id != null) k++; if (k < L.length) i = k; }
+  if (i >= L.length) { S.fast = null; render(); toast('Arrivato alla fine: controlla e salva'); return; }
+  S.fast = Math.max(0, i); S.sel = 0; render(); const f = $('#fastin'); if (f) { f.value = ''; f.focus(); }
+}
+function fastPick(id){ S.bulk[S.fast].id = id; fastGo(1); }
+document.addEventListener('keydown', e => {
+  if (e.target.id !== 'fastin') return;
+  if (e.key === 'Enter') { e.preventDefault(); const s = S.sug || []; if (s.length) fastPick(s[S.sel||0].id); else if (!e.target.value.trim()) fastGo(1); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = (S.sug||[]).length; if (n) { S.sel = ((S.sel||0) + (e.key==='ArrowDown'?1:-1) + n) % n; fastPaint(); } }
+  else if (e.key === 'Escape') { e.preventDefault(); fastGo(1); }
+});
+document.addEventListener('input', e => { if (e.target.id === 'fastin') { S.sel = 0; fastPaint(); } });
+
+const fmt = n => Number(n||0).toLocaleString('it-IT');
+const PGD = {"ed": "3.5", "dei": {"Boccob": ["N", ["Conoscenza", "Inganno", "Magia"], "Bastone ferrato", "dio della magia"], "Corellon Larethian": ["CB", ["Bene", "Caos", "Guerra", "Protezione"], "Spada lunga", "dio degli elfi"], "Ehlonna": ["NB", ["Animale", "Bene", "Sole", "Vegetale"], "Spada lunga", "dea dei boschi"], "Erythnul": ["CM", ["Caos", "Guerra", "Inganno", "Male"], "Morning star", "dio della strage"], "Fharlanghn": ["N", ["Fortuna", "Protezione", "Viaggio"], "Bastone ferrato", "dio delle strade"], "Garl Glittergold": ["NB", ["Bene", "Inganno", "Protezione"], "Ascia da battaglia", "dio degli gnomi"], "Gruumsh": ["CM", ["Caos", "Forza", "Guerra", "Male"], "Lancia", "dio degli orchi"], "Heironeous": ["LB", ["Bene", "Guerra", "Legge"], "Spada lunga", "dio del valore"], "Hextor": ["LM", ["Distruzione", "Guerra", "Legge", "Male"], "Mazzafrusto pesante", "dio della tirannia"], "Kord": ["CB", ["Bene", "Caos", "Fortuna", "Forza"], "Spadone", "dio della forza"], "Moradin": ["LB", ["Bene", "Legge", "Protezione", "Terra"], "Martello da guerra", "dio dei nani"], "Nerull": ["NM", ["Inganno", "Male", "Morte"], "Falce", "dio della morte"], "Obad-Hai": ["N", ["Acqua", "Animale", "Aria", "Fuoco", "Terra", "Vegetale"], "Bastone ferrato", "dio della natura"], "Olidammara": ["CN", ["Caos", "Fortuna", "Inganno"], "Stocco", "dio dei ladri"], "Pelor": ["NB", ["Bene", "Forza", "Guarigione", "Sole"], "Mazza pesante", "dio del sole"], "San Cuthbert": ["LN", ["Distruzione", "Forza", "Legge", "Protezione"], "Mazza pesante", "dio della punizione"], "Vecna": ["NM", ["Conoscenza", "Magia", "Male"], "Pugnale", "dio dei segreti"], "Wee Jas": ["LN", ["Legge", "Magia", "Morte"], "Pugnale", "dea della morte e della magia"], "Yondalla": ["LB", ["Bene", "Legge", "Protezione"], "Spada corta", "dea degli halfling"]}, "domini": {"Acqua": ["Scaccia o distrugge le creature del fuoco; intimorisce o comanda le creature dell'acqua.", []], "Animale": ["Parlare con gli animali una volta al giorno; Conoscenze (natura) diventa abilità di classe.", ["Conoscenze (natura)"]], "Aria": ["Scaccia o distrugge le creature della terra; intimorisce o comanda le creature dell'aria.", []], "Bene": ["Lancia gli incantesimi del bene a +1 livello dell'incantatore.", []], "Caos": ["Lancia gli incantesimi del caos a +1 livello dell'incantatore.", []], "Conoscenza": ["Tutte le Conoscenze sono abilità di classe; lancia le divinazioni a +1 livello dell'incantatore.", ["Conoscenze (arcane)", "Conoscenze (architettura e ingegneria)", "Conoscenze (dungeon)", "Conoscenze (geografia)", "Conoscenze (locali)", "Conoscenze (natura)", "Conoscenze (nobiltà e regalità)", "Conoscenze (piani)", "Conoscenze (religioni)", "Conoscenze (storia)"]], "Distruzione": ["Punire una volta al giorno: +4 al tiro per colpire e + livello da chierico ai danni.", []], "Forza": ["Impresa di forza una volta al giorno: bonus alla Forza pari al livello da chierico per 1 round.", []], "Fortuna": ["Buona sorte: una volta al giorno ritira un tiro appena effettuato.", []], "Fuoco": ["Scaccia o distrugge le creature dell'acqua; intimorisce o comanda le creature del fuoco.", []], "Guarigione": ["Lancia gli incantesimi di guarigione a +1 livello dell'incantatore.", []], "Guerra": ["Competenza e Arma Focalizzata gratuiti nell'arma preferita della divinità.", []], "Inganno": ["Camuffare, Nascondersi e Raggirare diventano abilità di classe.", ["Camuffare", "Nascondersi", "Raggirare"]], "Legge": ["Lancia gli incantesimi della legge a +1 livello dell'incantatore.", []], "Magia": ["Usa bacchette, bastoni e pergamene come un mago di metà del livello da chierico.", []], "Male": ["Lancia gli incantesimi del male a +1 livello dell'incantatore.", []], "Morte": ["Tocco di morte una volta al giorno: tira 1d6 per livello; se il risultato supera i PF attuali del bersaglio, muore.", []], "Protezione": ["Scudo protettivo una volta al giorno: + livello da chierico al prossimo tiro salvezza di una creatura toccata.", []], "Sole": ["Scacciare superiore una volta al giorno: i non morti scacciati vengono distrutti.", []], "Terra": ["Scaccia o distrugge le creature dell'aria; intimorisce o comanda le creature della terra.", []], "Vegetale": ["Intimorisce o comanda le creature vegetali; Conoscenze (natura) diventa abilità di classe.", ["Conoscenze (natura)"]], "Viaggio": ["Libertà di movimento per un round per livello al giorno; Sopravvivenza diventa abilità di classe.", ["Sopravvivenza"]]}, "car": [["for", "Forza"], ["des", "Destrezza"], ["cos", "Costituzione"], ["int", "Intelligenza"], ["sag", "Saggezza"], ["car", "Carisma"]], "abil": [["Acrobazia", "des", 1, 1], ["Addestrare Animali", "car", 1, 0], ["Artigianato", "int", 0, 0], ["Artista della Fuga", "des", 0, 1], ["Ascoltare", "sag", 0, 0], ["Camuffare", "car", 0, 0], ["Cavalcare", "des", 0, 0], ["Cercare", "int", 0, 0], ["Concentrazione", "cos", 0, 0], ["Conoscenze (arcane)", "int", 1, 0], ["Conoscenze (architettura e ingegneria)", "int", 1, 0], ["Conoscenze (dungeon)", "int", 1, 0], ["Conoscenze (geografia)", "int", 1, 0], ["Conoscenze (locali)", "int", 1, 0], ["Conoscenze (natura)", "int", 1, 0], ["Conoscenze (nobiltà e regalità)", "int", 1, 0], ["Conoscenze (piani)", "int", 1, 0], ["Conoscenze (religioni)", "int", 1, 0], ["Conoscenze (storia)", "int", 1, 0], ["Decifrare Scritture", "int", 1, 0], ["Diplomazia", "car", 0, 0], ["Disattivare Congegni", "int", 1, 0], ["Equilibrio", "des", 0, 1], ["Falsificare", "int", 0, 0], ["Guarire", "sag", 0, 0], ["Intimidire", "car", 0, 0], ["Intrattenere", "car", 0, 0], ["Muoversi Silenziosamente", "des", 0, 1], ["Nascondersi", "des", 0, 1], ["Nuotare", "for", 0, 2], ["Osservare", "sag", 0, 0], ["Parlare Linguaggi", "", 1, 0], ["Percepire Intenzioni", "sag", 0, 0], ["Professione", "sag", 1, 0], ["Raccogliere Informazioni", "car", 0, 0], ["Raggirare", "car", 0, 0], ["Rapidità di Mano", "des", 1, 1], ["Saltare", "for", 0, 1], ["Sapienza Magica", "int", 1, 0], ["Scalare", "for", 0, 1], ["Scassinare Serrature", "des", 1, 0], ["Sopravvivenza", "sag", 0, 0], ["Utilizzare Corde", "des", 0, 0], ["Utilizzare Oggetti Magici", "car", 1, 0], ["Valutare", "int", 0, 0]], "classi": {"Barbaro": {"dv": 12, "bab": "a", "ts": "f", "pa": 4, "armi": "sg", "armiTxt": "Armi semplici e da guerra", "arm": "lm", "scudo": 1, "cs": ["Addestrare Animali", "Artigianato", "Ascoltare", "Cavalcare", "Intimidire", "Nuotare", "Saltare", "Scalare", "Sopravvivenza"], "col": [["Ire al giorno", [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6]]], "f": [[1, "Movimento veloce", "Velocità +3 metri se non indossa armature pesanti e non trasporta un carico pesante."], [1, "Analfabetismo", "Non sa leggere né scrivere finché non spende 2 punti abilità per imparare."], [1, "Ira", "Per un numero di round pari a 3 + nuovo modificatore di Costituzione: +4 Forza, +4 Costituzione, +2 ai TS sulla Volontà, −2 alla CA. Al termine è affaticato. Usi al giorno nella colonna dedicata."], [2, "Schivare prodigioso", "Mantiene il bonus di Destrezza alla CA anche quando è colto alla sprovvista o attaccato da un nemico invisibile."], [3, "Percepire trappole", "+1 ai TS sui Riflessi e alla CA contro le trappole; +2 al 6º, +3 al 9º, +4 al 12º, +5 al 15º, +6 al 18º livello."], [5, "Schivare prodigioso migliorato", "Non può essere attaccato ai fianchi, tranne da un ladro di almeno quattro livelli superiore."], [7, "Riduzione del danno", "RD 1/—; sale a 2/— al 10º, 3/— al 13º, 4/— al 16º, 5/— al 19º livello."], [11, "Ira superiore", "In ira ottiene +6 Forza, +6 Costituzione e +3 ai TS sulla Volontà."], [14, "Volontà indomita", "In ira, +4 ai TS sulla Volontà contro gli ammaliamenti."], [17, "Ira instancabile", "Al termine dell'ira non è più affaticato."], [20, "Ira possente", "In ira ottiene +8 Forza, +8 Costituzione e +4 ai TS sulla Volontà."]]}, "Bardo": {"dv": 6, "bab": "m", "ts": "rv", "pa": 6, "armi": "sx", "armiX": ["Spada lunga", "Stocco", "Spada corta", "Arco corto", "Frusta", "Mazza", "Randello"], "armiTxt": "Armi semplici, spada lunga, stocco, randello, spada corta, arco corto, frusta", "arm": "l", "scudo": 1, "cs": ["Acrobazia", "Artigianato", "Artista della Fuga", "Ascoltare", "Camuffare", "Concentrazione", "Conoscenze (arcane)", "Conoscenze (architettura e ingegneria)", "Conoscenze (dungeon)", "Conoscenze (geografia)", "Conoscenze (locali)", "Conoscenze (natura)", "Conoscenze (nobiltà e regalità)", "Conoscenze (piani)", "Conoscenze (religioni)", "Conoscenze (storia)", "Decifrare Scritture", "Diplomazia", "Equilibrio", "Intrattenere", "Muoversi Silenziosamente", "Nascondersi", "Nuotare", "Parlare Linguaggi", "Percepire Intenzioni", "Professione", "Raccogliere Informazioni", "Raggirare", "Rapidità di Mano", "Saltare", "Sapienza Magica", "Scalare", "Utilizzare Oggetti Magici", "Valutare"], "cast": {"car": "car", "tab": [[2], [3, 0], [3, 1], [3, 2, 0], [3, 3, 1], [3, 3, 2], [3, 3, 2, 0], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 2, 0], [3, 3, 3, 3, 1], [3, 3, 3, 3, 2], [3, 3, 3, 3, 2, 0], [4, 3, 3, 3, 3, 1], [4, 4, 3, 3, 3, 2], [4, 4, 4, 3, 3, 2, 0], [4, 4, 4, 4, 3, 3, 1], [4, 4, 4, 4, 4, 3, 2], [4, 4, 4, 4, 4, 4, 3], [4, 4, 4, 4, 4, 4, 4]], "noti": [[4], [5, 2], [6, 3], [6, 3, 2], [6, 4, 3], [6, 4, 3], [6, 4, 4, 2], [6, 4, 4, 3], [6, 4, 4, 3], [6, 4, 4, 4, 2], [6, 4, 4, 4, 3], [6, 4, 4, 4, 3], [6, 4, 4, 4, 4, 2], [6, 4, 4, 4, 4, 3], [6, 4, 4, 4, 4, 3], [6, 5, 4, 4, 4, 4, 2], [6, 5, 5, 4, 4, 4, 3], [6, 5, 5, 5, 4, 4, 3], [6, 5, 5, 5, 5, 4, 4], [6, 5, 5, 5, 5, 5, 4]], "arc": 1}, "f": [[1, "Incantesimi arcani", "Lancia incantesimi arcani da bardo spontaneamente, usando il Carisma, senza prepararli. Può lanciarli con armatura leggera senza probabilità di fallimento."], [1, "Conoscenze bardiche", "Prova con 1d20 + livello da bardo + modificatore di Intelligenza per conoscere informazioni su persone, oggetti o luoghi famosi."], [1, "Musica bardica", "Una volta al giorno per livello: Controcanto, Affascinare, Ispirare coraggio (+1 morale ad attacchi e danni, +2 all'8º, +3 al 14º, +4 al 20º); poi Ispirare competenza (3º), Suggestione (6º), Ispirare grandezza (9º), Canzone di libertà (12º), Ispirare eroismo (15º), Suggestione di massa (18º)."]]}, "Chierico": {"dv": 8, "bab": "m", "ts": "fv", "pa": 2, "armi": "s", "armiTxt": "Armi semplici (più l'arma preferita della divinità con il dominio Guerra)", "arm": "lmp", "scudo": 1, "cs": ["Artigianato", "Concentrazione", "Conoscenze (arcane)", "Conoscenze (storia)", "Conoscenze (religioni)", "Conoscenze (piani)", "Diplomazia", "Guarire", "Professione", "Sapienza Magica"], "cast": {"car": "sag", "tab": [[3, 1], [4, 2], [4, 2, 1], [5, 3, 2], [5, 3, 2, 1], [5, 3, 3, 2], [6, 4, 3, 2, 1], [6, 4, 3, 3, 2], [6, 4, 4, 3, 2, 1], [6, 4, 4, 3, 3, 2], [6, 5, 4, 4, 3, 2, 1], [6, 5, 4, 4, 3, 3, 2], [6, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 5, 5, 4, 4, 3, 3], [6, 5, 5, 5, 5, 5, 4, 4, 4, 4]], "dom": 1}, "f": [[1, "Incantesimi divini", "Prepara incantesimi divini dalla lista del chierico usando la Saggezza; ha uno slot di dominio in più per ogni livello di incantesimo da 1 a 9."], [1, "Aura", "Emana un'aura del proprio allineamento, se ne ha uno."], [1, "Domini", "Sceglie due domini della divinità: ottiene i loro poteri concessi e i loro incantesimi per gli slot di dominio."], [1, "Lancio spontaneo", "Può convertire un incantesimo preparato (non di dominio) in un incantesimo cura (buono o neutrale) o infliggi (malvagio) dello stesso livello."], [1, "Scacciare o intimorire non morti", "Al giorno, 3 + modificatore di Carisma volte: prova di scacciare per scacciare o distruggere (o intimorire e comandare) i non morti."]]}, "Druido": {"dv": 8, "bab": "m", "ts": "fv", "pa": 4, "armi": "sx", "armiX": ["Randello", "Pugnale", "Dardo", "Bastone ferrato", "Scimitarra", "Falcetto", "Lancia corta", "Fionda", "Lancia"], "armiTxt": "Randello, pugnale, dardo, bastone ferrato, scimitarra, falcetto, lancia corta, fionda, lancia", "arm": "lm", "scudo": 1, "cs": ["Addestrare Animali", "Artigianato", "Ascoltare", "Cavalcare", "Concentrazione", "Conoscenze (natura)", "Diplomazia", "Guarire", "Nuotare", "Osservare", "Professione", "Sapienza Magica", "Sopravvivenza"], "cast": {"car": "sag", "tab": [[3, 1], [4, 2], [4, 2, 1], [5, 3, 2], [5, 3, 2, 1], [5, 3, 3, 2], [6, 4, 3, 2, 1], [6, 4, 3, 3, 2], [6, 4, 4, 3, 2, 1], [6, 4, 4, 3, 3, 2], [6, 5, 4, 4, 3, 2, 1], [6, 5, 4, 4, 3, 3, 2], [6, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 5, 4, 4, 3, 2, 1], [6, 5, 5, 5, 5, 4, 4, 3, 3, 2], [6, 5, 5, 5, 5, 5, 4, 4, 3, 3], [6, 5, 5, 5, 5, 5, 4, 4, 4, 4]]}, "f": [[1, "Incantesimi divini", "Prepara incantesimi da druido usando la Saggezza. Non indossa armature o scudi di metallo. Può convertire incantesimi preparati in evoca alleato naturale."], [1, "Compagno animale", "Ha un compagno animale che migliora con il livello."], [1, "Senso della natura", "+2 alle prove di Conoscenze (natura) e Sopravvivenza."], [1, "Empatia selvatica", "Migliora l'atteggiamento degli animali: 1d20 + livello da druido + modificatore di Carisma."], [2, "Andatura nel bosco", "Si muove nel sottobosco a velocità normale senza subire danni."], [3, "Passo senza tracce", "Non lascia tracce negli ambienti naturali."], [4, "Resistere al richiamo della natura", "+4 ai TS contro le capacità magiche dei folletti."], [5, "Forma selvatica", "Si trasforma in un animale Piccolo o Medio una volta al giorno; più usi e forme più grandi ai livelli successivi (elementali dal 16º)."], [9, "Immunità al veleno", "È immune a tutti i veleni."], [13, "Mille volti", "Può cambiare aspetto a volontà, come con alterare se stesso."], [15, "Corpo senza tempo", "Non subisce più penalità di vecchiaia."]]}, "Guerriero": {"dv": 10, "bab": "a", "ts": "f", "pa": 2, "armi": "sg", "armiTxt": "Armi semplici e da guerra", "arm": "lmp", "scudo": 2, "cs": ["Addestrare Animali", "Artigianato", "Cavalcare", "Intimidire", "Nuotare", "Saltare", "Scalare"], "talBonus": [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], "f": [[1, "Talenti bonus", "Talento di combattimento bonus al 1º e 2º livello e poi a ogni livello pari."]]}, "Ladro": {"dv": 6, "bab": "m", "ts": "r", "pa": 8, "armi": "sx", "armiX": ["Balestra a mano", "Stocco", "Manganello", "Arco corto", "Spada corta"], "armiTxt": "Armi semplici, balestra a mano, stocco, manganello, arco corto, spada corta", "arm": "l", "scudo": 0, "cs": ["Acrobazia", "Artigianato", "Artista della Fuga", "Ascoltare", "Camuffare", "Cercare", "Conoscenze (locali)", "Decifrare Scritture", "Diplomazia", "Disattivare Congegni", "Equilibrio", "Falsificare", "Intimidire", "Intrattenere", "Muoversi Silenziosamente", "Nascondersi", "Nuotare", "Osservare", "Percepire Intenzioni", "Professione", "Raccogliere Informazioni", "Raggirare", "Rapidità di Mano", "Saltare", "Scalare", "Scassinare Serrature", "Utilizzare Corde", "Utilizzare Oggetti Magici", "Valutare"], "col": [["Attacco furtivo", ["+1d6", "+1d6", "+2d6", "+2d6", "+3d6", "+3d6", "+4d6", "+4d6", "+5d6", "+5d6", "+6d6", "+6d6", "+7d6", "+7d6", "+8d6", "+8d6", "+9d6", "+9d6", "+10d6", "+10d6"]]], "f": [[1, "Attacco furtivo", "Danni extra (colonna) quando il bersaglio perde il bonus di Destrezza alla CA o è attaccato ai fianchi, entro 9 metri con le armi a distanza."], [1, "Scoprire trappole", "Può usare Cercare per trovare trappole con CD superiore a 20 e Disattivare Congegni per le trappole magiche."], [2, "Eludere", "Se supera un TS sui Riflessi che dimezzerebbe i danni, non subisce danni."], [3, "Percepire trappole", "+1 ai TS sui Riflessi e alla CA contro le trappole; +1 ogni tre livelli successivi."], [4, "Schivare prodigioso", "Mantiene il bonus di Destrezza alla CA quando è colto alla sprovvista."], [8, "Schivare prodigioso migliorato", "Non può essere attaccato ai fianchi, tranne da un ladro di almeno quattro livelli superiore."], [10, "Capacità speciale", "Al 10º, 13º, 16º e 19º livello sceglie una capacità: Colpo menomante, Eludere migliorato, Mente sfuggente, Opportunismo, Padronanza dell'abilità, Rotolare in difesa o un talento."]]}, "Mago": {"dv": 4, "bab": "p", "ts": "v", "pa": 2, "armi": "sx", "armiX": ["Randello", "Pugnale", "Balestra pesante", "Balestra leggera", "Bastone ferrato"], "armiTxt": "Randello, pugnale, balestre, bastone ferrato", "arm": "", "scudo": 0, "cs": ["Artigianato", "Concentrazione", "Conoscenze (arcane)", "Conoscenze (architettura e ingegneria)", "Conoscenze (dungeon)", "Conoscenze (geografia)", "Conoscenze (locali)", "Conoscenze (natura)", "Conoscenze (nobiltà e regalità)", "Conoscenze (piani)", "Conoscenze (religioni)", "Conoscenze (storia)", "Decifrare Scritture", "Professione", "Sapienza Magica"], "talBonus": [5, 10, 15, 20], "cast": {"car": "int", "tab": [[3, 1], [4, 2], [4, 2, 1], [4, 3, 2], [4, 3, 2, 1], [4, 3, 3, 2], [4, 4, 3, 2, 1], [4, 4, 3, 3, 2], [4, 4, 4, 3, 2, 1], [4, 4, 4, 3, 3, 2], [4, 4, 4, 4, 3, 2, 1], [4, 4, 4, 4, 3, 3, 2], [4, 4, 4, 4, 4, 3, 2, 1], [4, 4, 4, 4, 4, 3, 3, 2], [4, 4, 4, 4, 4, 4, 3, 2, 1], [4, 4, 4, 4, 4, 4, 3, 3, 2], [4, 4, 4, 4, 4, 4, 4, 3, 2, 1], [4, 4, 4, 4, 4, 4, 4, 3, 3, 2], [4, 4, 4, 4, 4, 4, 4, 4, 3, 3], [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]], "arc": 1}, "f": [[1, "Incantesimi arcani", "Prepara incantesimi arcani dal libro degli incantesimi usando l'Intelligenza; con l'armatura rischia il fallimento degli incantesimi arcani."], [1, "Famiglio", "Può evocare un famiglio che gli conferisce un bonus e capacità crescenti."], [1, "Scrivere pergamene", "Talento bonus Scrivere Pergamene."], [1, "Libro degli incantesimi", "Inizia con tutti gli incantesimi di livello 0 più 3 + modificatore di Intelligenza incantesimi di 1º livello; ne aggiunge due a ogni livello."], [5, "Talenti bonus", "Al 5º, 10º, 15º e 20º livello ottiene un talento di metamagia, di creazione oggetti o Padronanza degli Incantesimi."]]}, "Monaco": {"dv": 8, "bab": "m", "ts": "frv", "pa": 4, "armi": "x", "armiX": ["Randello", "Balestra leggera", "Balestra pesante", "Pugnale", "Ascia", "Giavellotto", "Kama", "Nunchaku", "Bastone ferrato", "Sai", "Shuriken", "Siangham", "Fionda"], "armiTxt": "Randello, balestre, pugnale, ascia, giavellotto, kama, nunchaku, bastone ferrato, sai, shuriken, siangham, fionda", "arm": "", "scudo": 0, "cs": ["Acrobazia", "Artigianato", "Artista della Fuga", "Ascoltare", "Concentrazione", "Conoscenze (arcane)", "Conoscenze (religioni)", "Diplomazia", "Equilibrio", "Intrattenere", "Muoversi Silenziosamente", "Nascondersi", "Nuotare", "Osservare", "Percepire Intenzioni", "Professione", "Saltare", "Scalare"], "col": [["Colpo senz'armi", ["1d6", "1d6", "1d6", "1d8", "1d8", "1d8", "1d8", "1d10", "1d10", "1d10", "1d10", "2d6", "2d6", "2d6", "2d6", "2d8", "2d8", "2d8", "2d8", "2d10"]], ["Bonus alla CA", [0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4]], ["Movimento veloce", ["—", "—", "+3 m", "+3 m", "+3 m", "+6 m", "+6 m", "+6 m", "+9 m", "+9 m", "+9 m", "+12 m", "+12 m", "+12 m", "+15 m", "+15 m", "+15 m", "+18 m", "+18 m", "+18 m"]]], "f": [[1, "Bonus alla CA", "Senza armatura né carico aggiunge alla CA il modificatore di Saggezza e un bonus che cresce con il livello (già nella scheda)."], [1, "Raffica di colpi", "Con un attacco completo effettua un attacco extra con −2 a tutti gli attacchi (penalità −1 dal 5º, nessuna dal 9º; secondo attacco extra all'11º)."], [1, "Colpo senz'armi", "Talento Colpo Senz'Armi Migliorato; danni nella colonna dedicata."], [1, "Talento bonus", "Afferrare Frecce o Colpo Stordente al 1º, Deviare Frecce o Lottare Migliorato al 2º, Disarmare Migliorato o Sbilanciare Migliorato al 6º."], [2, "Eludere", "Se supera un TS sui Riflessi che dimezzerebbe i danni, non subisce danni."], [3, "Mente lucida", "+2 ai TS contro gli ammaliamenti."], [4, "Colpo ki", "I colpi senz'armi sono magici (legali dal 10º, adamantio dal 16º)."], [4, "Caduta lenta", "Riduce i danni da caduta se vicino a una parete (3 metri, migliora con il livello)."], [5, "Purezza del corpo", "È immune alle malattie non magiche."], [7, "Integrità del corpo", "Si cura due punti ferita per livello al giorno."], [9, "Eludere migliorato", "Subisce metà dei danni anche se fallisce un TS sui Riflessi."], [11, "Corpo di diamante", "È immune ai veleni."], [12, "Passo abbondante", "Una volta al giorno porta dimensionale come capacità magica."], [13, "Anima di diamante", "Resistenza agli incantesimi pari a livello + 10."], [15, "Palmo tremante", "Una volta alla settimana può uccidere un bersaglio colpito (TS sulla Tempra)."], [17, "Corpo senza tempo", "Non subisce penalità di vecchiaia; lingua del sole e della luna."], [19, "Corpo vuoto", "Diventa etereo per un round per livello al giorno."], [20, "Perfezione interiore", "Diventa un esterno, con RD 10/magia."]]}, "Paladino": {"dv": 10, "bab": "a", "ts": "f", "pa": 2, "armi": "sg", "armiTxt": "Armi semplici e da guerra", "arm": "lmp", "scudo": 1, "cs": ["Addestrare Animali", "Artigianato", "Cavalcare", "Concentrazione", "Conoscenze (nobiltà e regalità)", "Conoscenze (religioni)", "Diplomazia", "Guarire", "Percepire Intenzioni", "Professione"], "cast": {"car": "sag", "tab": [[null], [null], [null], [null, 0], [null, 0], [null, 1], [null, 1], [null, 1, 0], [null, 1, 0], [null, 1, 1], [null, 1, 1, 0], [null, 1, 1, 1], [null, 1, 1, 1], [null, 2, 1, 1, 0], [null, 2, 1, 1, 1], [null, 2, 2, 1, 1], [null, 2, 2, 2, 1], [null, 3, 2, 2, 1], [null, 3, 3, 3, 2], [null, 3, 3, 3, 3]], "half": 1}, "f": [[1, "Aura del bene", "Emana un'aura di bene pari al livello da paladino."], [1, "Individuazione del male", "Può usare individuazione del male a volontà."], [1, "Punire il male", "Una volta al giorno (più usi ai livelli successivi) aggiunge il Carisma all'attacco e il livello ai danni contro un nemico malvagio."], [2, "Grazia divina", "Aggiunge il modificatore di Carisma a tutti i tiri salvezza (già nella scheda)."], [2, "Imposizione delle mani", "Cura ogni giorno punti ferita pari a livello × modificatore di Carisma."], [3, "Aura di coraggio", "È immune alla paura; gli alleati entro 3 metri ottengono +4 ai TS contro la paura."], [3, "Salute divina", "È immune a tutte le malattie."], [4, "Scacciare non morti", "Scaccia i non morti come un chierico di tre livelli inferiore."], [4, "Incantesimi divini", "Prepara incantesimi da paladino usando la Saggezza (livello dell'incantatore pari a metà del livello da paladino)."], [5, "Cavalcatura speciale", "Può evocare una cavalcatura celestiale."], [6, "Rimuovere malattie", "Una volta alla settimana (più usi ai livelli successivi)."]]}, "Ranger": {"dv": 8, "bab": "a", "ts": "fr", "pa": 6, "armi": "sg", "armiTxt": "Armi semplici e da guerra", "arm": "l", "scudo": 1, "cs": ["Addestrare Animali", "Artigianato", "Ascoltare", "Cavalcare", "Cercare", "Concentrazione", "Conoscenze (dungeon)", "Conoscenze (geografia)", "Conoscenze (natura)", "Guarire", "Muoversi Silenziosamente", "Nascondersi", "Nuotare", "Osservare", "Professione", "Saltare", "Scalare", "Sopravvivenza", "Utilizzare Corde"], "cast": {"car": "sag", "tab": [[null], [null], [null], [null, 0], [null, 0], [null, 1], [null, 1], [null, 1, 0], [null, 1, 0], [null, 1, 1], [null, 1, 1, 0], [null, 1, 1, 1], [null, 1, 1, 1], [null, 2, 1, 1, 0], [null, 2, 1, 1, 1], [null, 2, 2, 1, 1], [null, 2, 2, 2, 1], [null, 3, 2, 2, 1], [null, 3, 3, 3, 2], [null, 3, 3, 3, 3]], "half": 1}, "f": [[1, "Nemico prescelto", "+2 alle prove di Ascoltare, Osservare, Percepire Intenzioni, Raggirare e Sopravvivenza e ai danni contro il tipo scelto; un nuovo nemico al 5º, 10º, 15º e 20º livello."], [1, "Seguire tracce", "Talento bonus Seguire Tracce."], [1, "Empatia selvatica", "Migliora l'atteggiamento degli animali."], [2, "Stile di combattimento", "Tiro con l'arco (Tiro Rapido) o due armi (Combattere con Due Armi); migliorato al 6º, maestria all'11º, senza armatura media o pesante."], [3, "Resistenza fisica", "Talento bonus Resistenza Fisica."], [4, "Compagno animale", "Ottiene un compagno animale come un druido di metà livello."], [4, "Incantesimi divini", "Prepara incantesimi da ranger usando la Saggezza (livello dell'incantatore pari a metà del livello da ranger)."], [7, "Andatura nel bosco", "Si muove nel sottobosco a velocità normale senza subire danni."], [8, "Seguire tracce rapido", "Segue le tracce a velocità normale senza penalità."], [9, "Eludere", "Se supera un TS sui Riflessi che dimezzerebbe i danni, non subisce danni."], [13, "Mimetismo", "Può Nascondersi in qualsiasi terreno naturale."], [17, "Nascondersi in piena vista", "Può Nascondersi in terreno naturale anche se osservato."]]}, "Stregone": {"dv": 4, "bab": "p", "ts": "v", "pa": 2, "armi": "s", "armiTxt": "Armi semplici", "arm": "", "scudo": 0, "cs": ["Artigianato", "Concentrazione", "Conoscenze (arcane)", "Professione", "Raggirare", "Sapienza Magica"], "cast": {"car": "car", "tab": [[5, 3], [6, 4], [6, 5], [6, 6, 3], [6, 6, 4], [6, 6, 5, 3], [6, 6, 6, 4], [6, 6, 6, 5, 3], [6, 6, 6, 6, 4], [6, 6, 6, 6, 5, 3], [6, 6, 6, 6, 6, 4], [6, 6, 6, 6, 6, 5, 3], [6, 6, 6, 6, 6, 6, 4], [6, 6, 6, 6, 6, 6, 5, 3], [6, 6, 6, 6, 6, 6, 6, 4], [6, 6, 6, 6, 6, 6, 6, 5, 3], [6, 6, 6, 6, 6, 6, 6, 6, 4], [6, 6, 6, 6, 6, 6, 6, 6, 5, 3], [6, 6, 6, 6, 6, 6, 6, 6, 6, 4], [6, 6, 6, 6, 6, 6, 6, 6, 6, 6]], "noti": [[4, 2], [5, 2], [5, 3], [6, 3, 1], [6, 4, 2], [7, 4, 2, 1], [7, 5, 3, 2], [8, 5, 3, 2, 1], [8, 5, 4, 3, 2], [9, 5, 4, 3, 2, 1], [9, 5, 5, 4, 3, 2], [9, 5, 5, 4, 3, 2, 1], [9, 5, 5, 4, 4, 3, 2], [9, 5, 5, 4, 4, 3, 2, 1], [9, 5, 5, 4, 4, 4, 3, 2], [9, 5, 5, 4, 4, 4, 3, 2, 1], [9, 5, 5, 4, 4, 4, 3, 3, 2], [9, 5, 5, 4, 4, 4, 3, 3, 2, 1], [9, 5, 5, 4, 4, 4, 3, 3, 3, 2], [9, 5, 5, 4, 4, 4, 3, 3, 3, 3]], "arc": 1}, "f": [[1, "Incantesimi arcani", "Lancia spontaneamente gli incantesimi conosciuti usando il Carisma, senza prepararli."], [1, "Famiglio", "Può evocare un famiglio."]]}}, "specie": {"Umano": {"vel": 9, "taglia": "M", "bonus": {}, "talExtra": 1, "paExtra": 1, "skb": {}, "t": [["Talento extra", "Un talento in più al 1º livello."], ["Abilità extra", "4 punti abilità in più al 1º livello e 1 in più a ogni livello successivo."], ["Classe preferita", "Qualsiasi."]]}, "Nano": {"vel": 6, "taglia": "M", "bonus": {"cos": 2, "car": -2}, "skb": {"Valutare": 2}, "ts": {"tutti": 0}, "armiP": ["Ascia da guerra nanica", "Urgrosh nanico"], "t": [["Velocità", "6 metri, anche con armatura media o pesante."], ["Scurovisione", "18 metri."], ["Esperto minatore", "+2 a Cercare per notare lavori in pietra insoliti."], ["Stabilità", "+4 contro spingere e sbilanciare."], ["Resistenze", "+2 ai TS contro veleni, incantesimi e capacità magiche."], ["Odio", "+1 ai tiri per colpire contro orchi e goblinoidi; +4 di schivare alla CA contro i giganti."], ["Abilità", "+2 a Valutare e Artigianato legati a pietra e metallo."], ["Classe preferita", "Guerriero."]]}, "Elfo": {"vel": 9, "taglia": "M", "bonus": {"des": 2, "cos": -2}, "skb": {"Ascoltare": 2, "Cercare": 2, "Osservare": 2}, "armiP": ["Spada lunga", "Stocco", "Arco lungo", "Arco corto"], "t": [["Immunità", "Immune agli effetti magici di sonno; +2 ai TS contro gli ammaliamenti."], ["Visione crepuscolare", "Vede il doppio in condizioni di luce scarsa."], ["Competenze nelle armi", "Spada lunga, stocco, arco lungo e arco corto."], ["Sensi acuti", "+2 ad Ascoltare, Cercare e Osservare; nota le porte segrete passando entro 1,5 metri."], ["Classe preferita", "Mago."]]}, "Gnomo": {"vel": 6, "taglia": "P", "bonus": {"cos": 2, "for": -2}, "skb": {"Ascoltare": 2, "Artigianato": 2}, "t": [["Taglia Piccola", "+1 alla CA e ai tiri per colpire, +4 a Nascondersi, −4 alla lotta (già nella scheda)."], ["Visione crepuscolare", "Vede il doppio in condizioni di luce scarsa."], ["Resistenze", "+2 ai TS contro le illusioni; +1 alla CD delle sue illusioni."], ["Odio", "+1 ai tiri per colpire contro coboldi e goblinoidi; +4 di schivare alla CA contro i giganti."], ["Capacità magiche", "Parlare con gli animali (tana) una volta al giorno; con Carisma 10 o più anche luci danzanti, suono fantasma e prestidigitazione una volta al giorno."], ["Classe preferita", "Bardo."]]}, "Mezzelfo": {"vel": 9, "taglia": "M", "bonus": {}, "skb": {"Ascoltare": 1, "Cercare": 1, "Osservare": 1, "Diplomazia": 2, "Raccogliere Informazioni": 2}, "t": [["Immunità", "Immune agli effetti magici di sonno; +2 ai TS contro gli ammaliamenti."], ["Visione crepuscolare", "Vede il doppio in condizioni di luce scarsa."], ["Abilità", "+1 ad Ascoltare, Cercare e Osservare; +2 a Diplomazia e Raccogliere Informazioni."], ["Sangue elfico", "Conta come elfo per gli effetti legati alla razza."], ["Classe preferita", "Qualsiasi."]]}, "Mezzorco": {"vel": 9, "taglia": "M", "bonus": {"for": 2, "int": -2, "car": -2}, "skb": {}, "t": [["Scurovisione", "18 metri."], ["Sangue orchesco", "Conta come orco per gli effetti legati alla razza."], ["Classe preferita", "Barbaro."]]}, "Halfling": {"vel": 6, "taglia": "P", "bonus": {"des": 2, "for": -2}, "skb": {"Scalare": 2, "Saltare": 2, "Muoversi Silenziosamente": 2, "Ascoltare": 2}, "tsTutti": 1, "t": [["Taglia Piccola", "+1 alla CA e ai tiri per colpire, +4 a Nascondersi, −4 alla lotta (già nella scheda)."], ["Fortuna", "+1 a tutti i tiri salvezza (già nella scheda); +2 ai TS contro la paura."], ["Abilità", "+2 a Scalare, Saltare, Muoversi Silenziosamente e Ascoltare."], ["Lancio", "+1 ai tiri per colpire con armi da lancio e fionde."], ["Classe preferita", "Ladro."]]}}, "armi": [["Pugnale", "1d4", "19-20/×2", "P o T", "sml"], ["Falcetto", "1d6", "×2", "T", "sml"], ["Mazza leggera", "1d6", "×2", "C", "sml"], ["Randello", "1d6", "×2", "C", "sm"], ["Mazza pesante", "1d8", "×2", "C", "sm"], ["Morning star", "1d8", "×2", "C e P", "sm"], ["Lancia corta", "1d6", "×2", "P", "sm"], ["Lancia", "1d8", "×3", "P", "sm2"], ["Bastone ferrato", "1d6/1d6", "×2", "C", "sm2"], ["Balestra leggera", "1d8", "19-20/×2", "P", "sd"], ["Balestra pesante", "1d10", "19-20/×2", "P", "sd"], ["Dardo", "1d4", "×2", "P", "sd"], ["Giavellotto", "1d6", "×2", "P", "sd"], ["Fionda", "1d4", "×2", "C", "sd"], ["Ascia", "1d6", "×3", "T", "gml"], ["Manganello", "1d6", "×2", "C", "gml"], ["Spada corta", "1d6", "19-20/×2", "P", "gml"], ["Martello leggero", "1d4", "×2", "C", "gml"], ["Ascia da battaglia", "1d8", "×3", "T", "gm"], ["Mazzafrusto", "1d8", "×2", "C", "gm"], ["Spada lunga", "1d8", "19-20/×2", "T", "gm"], ["Piccone pesante", "1d6", "×4", "P", "gm"], ["Stocco", "1d6", "18-20/×2", "P", "gm"], ["Scimitarra", "1d6", "18-20/×2", "T", "gm"], ["Tridente", "1d8", "×2", "P", "gm"], ["Martello da guerra", "1d8", "×3", "C", "gm"], ["Falchion", "2d4", "18-20/×2", "T", "gm2"], ["Ascia bipenne", "1d12", "×3", "T", "gm2"], ["Spadone", "2d6", "19-20/×2", "T", "gm2"], ["Alabarda", "1d10", "×3", "P o T", "gm2"], ["Falcione", "1d10", "×3", "T", "gm2"], ["Lancia lunga", "1d8", "×3", "P", "gm2"], ["Maglio", "1d12", "×3", "C", "gm2"], ["Mazzafrusto pesante", "1d10", "19-20/×2", "C", "gm2"], ["Arco corto", "1d6", "×3", "P", "gd"], ["Falce", "2d4", "×4", "P o T", "gm2"], ["Arco lungo", "1d8", "×3", "P", "gd"], ["Frusta", "1d3", "×2", "T", "em"], ["Kama", "1d6", "×2", "T", "eml"], ["Nunchaku", "1d6", "×2", "C", "eml"], ["Sai", "1d4", "×2", "C", "eml"], ["Siangham", "1d6", "×2", "P", "eml"], ["Shuriken", "1d2", "×2", "P", "ed"], ["Spada bastarda", "1d10", "19-20/×2", "T", "em"], ["Ascia da guerra nanica", "1d10", "×3", "T", "em"], ["Urgrosh nanico", "1d8/1d6", "×3", "T o P", "em2"], ["Balestra a mano", "1d4", "19-20/×2", "P", "ed"], ["Colpo senz'armi", "1d3", "×2", "C", "sml"]], "armature": [["Armatura imbottita", 1, 8, 0, 5, "l"], ["Armatura di cuoio", 2, 6, 0, 10, "l"], ["Armatura di cuoio borchiato", 3, 5, -1, 15, "l"], ["Giaco di maglia", 4, 4, -2, 20, "l"], ["Armatura di pelle", 3, 4, -3, 20, "m"], ["Corazza a scaglie", 4, 3, -4, 25, "m"], ["Cotta di maglia", 5, 2, -5, 30, "m"], ["Corazza di piastre", 5, 3, -4, 25, "m"], ["Corazza a strisce", 6, 0, -7, 40, "p"], ["Corazza a bande", 6, 1, -6, 35, "p"], ["Mezza armatura", 7, 0, -7, 40, "p"], ["Armatura completa", 8, 1, -6, 35, "p"]], "scudi": [["Buckler", 1, -1, 5], ["Scudo leggero", 1, -1, 5], ["Scudo pesante", 2, -2, 15], ["Scudo torre", 4, -10, 50]], "talenti": {"Abilità Focalizzata": "+3 a un'abilità a scelta (scrivilo nel bonus vari dell'abilità).", "Allerta": "+2 ad Ascoltare e Osservare.", "Arma Accurata": "Usa la Destrezza invece della Forza per attaccare con armi leggere, stocco, frusta e catena chiodata.", "Arma Focalizzata": "+1 ai tiri per colpire con un'arma scelta (scrivilo nel bonus dell'arma).", "Arma Specializzata": "+2 ai danni con un'arma scelta (guerriero 4º).", "Attacco Poderoso": "Sottrae fino al bonus di attacco base dall'attacco in mischia e lo aggiunge ai danni (il doppio a due mani).", "Atletico": "+2 a Saltare e Scalare.", "Autosufficiente": "+2 a Guarire e Sopravvivenza.", "Combattere alla Cieca": "Ritira le probabilità di mancare per occultamento; nessuna penalità contro attaccanti invisibili in mischia.", "Combattere con Due Armi": "Riduce le penalità del combattere con due armi.", "Combattere in Sella": "Una volta per round nega un colpo alla cavalcatura con una prova di Cavalcare.", "Competenza nelle Armature (leggere)": "Nessuna penalità di attacco con armature leggere.", "Competenza nelle Armature (medie)": "Nessuna penalità di attacco con armature medie.", "Competenza nelle Armature (pesanti)": "Nessuna penalità di attacco con armature pesanti.", "Competenza negli Scudi": "Usa gli scudi senza penalità di attacco.", "Competenza nelle Armi da Guerra": "Competenza in un'arma da guerra a scelta.", "Competenza nelle Armi Esotiche": "Competenza in un'arma esotica a scelta.", "Colpo Senz'Armi Migliorato": "Colpisce senz'armi senza provocare attacchi di opportunità.", "Critico Migliorato": "Raddoppia l'intervallo di minaccia di un'arma scelta.", "Deviare Frecce": "Una volta per round devia un attacco a distanza.", "Diligente": "+2 a Valutare e Decifrare Scritture.", "Estrazione Rapida": "Estrae un'arma come azione gratuita.", "Furtivo": "+2 a Muoversi Silenziosamente e Nascondersi.", "Incalzare": "Un attacco extra quando abbatte un nemico.", "Incantare in Combattimento": "+4 alle prove di Concentrazione per lanciare sulla difensiva.", "Iniziativa Migliorata": "+4 all'iniziativa (già nella scheda).", "Lottare Migliorato": "+4 alle prove di lotta (già nella scheda); niente attacchi di opportunità.", "Maestria in Combattimento": "Sottrae fino a 5 dall'attacco e lo aggiunge alla CA.", "Mobilità": "+4 alla CA contro gli attacchi di opportunità dovuti al movimento.", "Negoziatore": "+2 a Diplomazia e Percepire Intenzioni.", "Persuasivo": "+2 a Raggirare e Intimidire.", "Resistenza Fisica": "+4 a prove e TS di resistenza; dorme con armatura media o leggera.", "Riflessi da Combattimento": "Attacchi di opportunità extra pari al modificatore di Destrezza.", "Riflessi Fulminei": "+2 ai tiri salvezza sui Riflessi (già nella scheda).", "Robustezza": "+3 punti ferita (già nella scheda).", "Schivare": "+1 di schivare alla CA contro un avversario (già nella scheda).", "Scrivere Pergamene": "Crea pergamene magiche.", "Seguire Tracce": "Segue le tracce con Sopravvivenza.", "Talento Magico": "+2 a Sapienza Magica e Utilizzare Oggetti Magici.", "Tempra Possente": "+2 ai tiri salvezza sulla Tempra (già nella scheda).", "Tiro a Bruciapelo": "+1 a colpire e ai danni con armi a distanza entro 9 metri.", "Tiro Preciso": "Nessuna penalità di −4 tirando in mischia.", "Tiro Rapido": "Un attacco a distanza extra a −2.", "Volontà di Ferro": "+2 ai tiri salvezza sulla Volontà (già nella scheda).", "Incantesimi Focalizzati": "+1 alla CD degli incantesimi di una scuola scelta.", "Incantesimi Massimizzati": "Metamagia: effetti numerici massimi, slot di 3 livelli superiore.", "Incantesimi Potenziati": "Metamagia: effetti numerici +50%, slot di 2 livelli superiore.", "Incantesimi Rapidi": "Metamagia: lancio come azione gratuita, slot di 4 livelli superiore.", "Incantesimi Estesi": "Metamagia: durata doppia, slot di 1 livello superiore.", "Incantesimi Silenziosi": "Metamagia: senza componente verbale, slot di 1 livello superiore.", "Incantesimi Immobili": "Metamagia: senza componente somatica, slot di 1 livello superiore.", "Creare Bacchette": "Crea bacchette magiche.", "Creare Armi e Armature Magiche": "Crea armi, armature e scudi magici.", "Creare Oggetti Meravigliosi": "Crea oggetti meravigliosi.", "Mescere Pozioni": "Crea pozioni."}};
+const PGC = 'pg35';
+const PG5 = false;
+const PCARN = Object.fromEntries(PGD.car), PCARK = PGD.car.map(c => c[0]);
+const TUTTE = '*';
+const pgMod = s => Math.floor((Number(s) - 10) / 2);
+const sgn = n => (n >= 0 ? '+' : '−') + Math.abs(n);
+const ARR_STD = [15, 14, 13, 12, 10, 8];
+const PUNTI = {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 6, 15: 8, 16: 10, 17: 13, 18: 16};
+S.pg = {}; S.pgOpen = {};
+const pgNew = (eroe) => ({eroe, giocatore:'', classe:'', specie:'', alli:'', divinita:'', divinitaAltra:'', dom1:'', dom2:'', metodo:'manuale',
+  base:{for:10, des:10, cos:10, int:10, sag:10, car:10}, extra:{}, gradi:{}, skMisc:{}, arm:'', scudo:'', caNat:0, caDev:0, caMisc:0,
+  tsMisc:{f:0, r:0, v:0}, pfAgg:0, pfAtt:'', pfTemp:'', danniNL:'', armi:[], monete:{mr:0, ma:0, mo:0, mp:0}, equip:'', tal:[], talTxt:'',
+  lingue:'', usi:'', spellTxt:{}, slotUsati:[], aspetto:'', storia:'', personalita:'', liv:1});
+const pgCanEd = id => !!(S.pgOff || S.pgOwner || (S.uid && id === S.uid));
+const pgHero = d => S.eroi.find(e => e.nome === d.eroe);
+const pgLv = d => { const h = pgHero(d); return h ? livello(h.pe) : (Number(d.liv) || 1); };
+const pgCls = d => PGD.classi[d.classe] || null;
+const pgSpe = d => PGD.specie[d.specie] || null;
+const pgHas = (d, t) => (d.tal || []).includes(t);
+const pgDoms = d => d.classe === 'Chierico' ? [d.dom1, d.dom2].filter(x => x && PGD.domini[x]) : [];
+const pgDio = d => PGD.dei[d.divinita] || null;
+const SMALL = {'1d2': '1', '1d3': '1d2', '1d4': '1d3', '1d6': '1d4', '1d8': '1d6', '1d10': '1d8', '1d12': '1d10', '2d4': '1d6', '2d6': '1d10'};
+const TAL_SK = {'Allerta': ['Ascoltare', 'Osservare'], 'Atletico': ['Saltare', 'Scalare'], 'Autosufficiente': ['Guarire', 'Sopravvivenza'], 'Diligente': ['Valutare', 'Decifrare Scritture'],
+  'Furtivo': ['Muoversi Silenziosamente', 'Nascondersi'], 'Negoziatore': ['Diplomazia', 'Percepire Intenzioni'], 'Persuasivo': ['Raggirare', 'Intimidire'], 'Talento Magico': ['Sapienza Magica', 'Utilizzare Oggetti Magici']};
+function pgScore(d, a){
+  const sp = pgSpe(d);
+  return (Number(d.base[a]) || 0) + ((sp && sp.bonus[a]) || 0) + (Number((d.extra || {})[a]) || 0);
+}
+function pgCalc(d){
+  const L = pgLv(d), c = pgCls(d), sp = pgSpe(d), picc = sp && sp.taglia === 'P';
+  const sc = {}, md = {}; for (const a of PCARK) { sc[a] = pgScore(d, a); md[a] = pgMod(sc[a]); }
+  const bab = !c ? 0 : c.bab === 'a' ? L : c.bab === 'm' ? Math.floor(L * 3 / 4) : Math.floor(L / 2);
+  const tsBase = k => c ? (c.ts.includes(k) ? 2 + Math.floor(L / 2) : Math.floor(L / 3)) : 0;
+  const grazia = c && d.classe === 'Paladino' && L >= 2 ? Math.max(0, md.car) : 0, fort = sp && sp.tsTutti ? 1 : 0;
+  const ts = {f: tsBase('f') + md.cos + (pgHas(d, 'Tempra Possente') ? 2 : 0), r: tsBase('r') + md.des + (pgHas(d, 'Riflessi Fulminei') ? 2 : 0), v: tsBase('v') + md.sag + (pgHas(d, 'Volontà di Ferro') ? 2 : 0)};
+  for (const k in ts) ts[k] += grazia + fort + (Number((d.tsMisc || {})[k]) || 0);
+  // armatura e scudo
+  const ar = PGD.armature.find(x => x[0] === d.arm), sh = PGD.scudi.find(x => x[0] === d.scudo);
+  let maxDes = 99; if (ar) maxDes = ar[2]; if (sh && d.scudo === 'Scudo torre') maxDes = Math.min(maxDes, 2);
+  const dex = Math.min(md.des, maxDes), acp = (ar ? ar[3] : 0) + (sh ? sh[2] : 0);
+  let monk = 0;
+  if (c && d.classe === 'Monaco' && !ar && !sh) monk = Math.max(0, md.sag) + c.col[1][1][L - 1];
+  const taglia = picc ? 1 : 0, sch = pgHas(d, 'Schivare') ? 1 : 0, nat = Number(d.caNat) || 0, dev = Number(d.caDev) || 0, mis = Number(d.caMisc) || 0;
+  const ca = 10 + (ar ? ar[1] : 0) + (sh ? sh[1] : 0) + dex + taglia + nat + dev + mis + sch + monk;
+  const contatto = 10 + dex + taglia + dev + sch + monk + mis;
+  const keepDex = c && ((d.classe === 'Barbaro' && L >= 2) || (d.classe === 'Ladro' && L >= 4));
+  const sprovvista = ca - (keepDex ? 0 : Math.max(0, dex) + sch);
+  const avvisi = [];
+  if (ar && c && !c.arm.includes(ar[5]) && !pgHas(d, 'Competenza nelle Armature (' + {l: 'leggere', m: 'medie', p: 'pesanti'}[ar[5]] + ')')) avvisi.push(`Il ${d.classe.toLowerCase()} non ha competenza in questa armatura: la penalità di armatura si applica anche ai tiri per colpire.`);
+  if (sh && c && !c.scudo && !pgHas(d, 'Competenza negli Scudi')) avvisi.push('Questa classe non ha competenza negli scudi.');
+  if (sh && d.scudo === 'Scudo torre' && c && c.scudo < 2) avvisi.push('Lo scudo torre richiede il talento Competenza negli Scudi Torre.');
+  let fall = 0; if (c && c.cast && c.cast.arc) { fall = (ar ? ar[4] : 0) + (sh ? sh[3] : 0); if (d.classe === 'Bardo' && ar && ar[5] === 'l') fall = sh ? sh[3] : 0; }
+  // velocità
+  let vel = sp ? sp.vel : 9;
+  const pesante = ar && ar[5] !== 'l';
+  if (pesante && d.specie !== 'Nano') vel = vel === 9 ? 6 : 4.5;
+  if (c && d.classe === 'Barbaro' && !(ar && ar[5] === 'p')) vel += 3;
+  if (c && d.classe === 'Monaco' && !ar && !sh) vel += [0, 0, 3, 3, 3, 6, 6, 6, 9, 9, 9, 12, 12, 12, 15, 15, 15, 18, 18, 18][L - 1];
+  // punti ferita
+  let pf = 0;
+  if (c) { pf = c.dv + md.cos; for (let i = 2; i <= L; i++) pf += Math.max(1, Math.floor(c.dv / 2) + 1 + md.cos); }
+  if (pgHas(d, 'Robustezza')) pf += 3;
+  pf = Math.max(1, pf + (Number(d.pfAgg) || 0));
+  const ini = md.des + (pgHas(d, 'Iniziativa Migliorata') ? 4 : 0);
+  const lotta = bab + md.for + (picc ? -4 : 0) + (pgHas(d, 'Lottare Migliorato') ? 4 : 0);
+  const iter = []; for (let b = bab; iter.length < 4 && (b > 0 || iter.length === 0); b -= 5) iter.push(b);
+  // abilità
+  const cs = new Set(c ? c.cs : []);
+  for (const dm of pgDoms(d)) for (const k of PGD.domini[dm][1]) cs.add(k);
+  const pts = c ? Math.max(1, c.pa + md.int) * (L + 3) + (sp && sp.paExtra ? L + 3 : 0) : 0;
+  let speso = 0;
+  const sk = PGD.abil.map(([n, a, sol, pen]) => {
+    const r = Number((d.gradi || {})[n]) || 0, cl = cs.has(n);
+    speso += cl ? r : r * 2;
+    let v = Math.floor(r) + (a ? md[a] : 0) + ((sp && sp.skb[n]) || 0) + (Number((d.skMisc || {})[n]) || 0);
+    if (picc && n === 'Nascondersi') v += 4;
+    for (const [t, l] of Object.entries(TAL_SK)) if (pgHas(d, t) && l.includes(n)) v += 2;
+    if (pen) v += acp * pen;
+    const max = cl ? L + 3 : (L + 3) / 2;
+    return {n, a, cl, r, v, max, troppo: r > max, no: sol && r <= 0};
+  });
+  // talenti disponibili
+  const talN = 1 + Math.floor(L / 3) + (sp && sp.talExtra ? 1 : 0) + (c && c.talBonus ? c.talBonus.filter(x => x <= L).length : 0);
+  // incantesimi
+  let mag = null;
+  if (c && c.cast) {
+    const k = c.cast, m = md[k.car], row = k.tab[L - 1] || [];
+    const lv = row.map((base, i) => {
+      if (base == null) return null;
+      let n = base + (i > 0 && m >= i ? 1 + Math.floor((m - i) / 4) : 0);
+      if (sc[k.car] < 10 + i) n = 0;
+      return {i, n, dom: k.dom && i > 0 ? 1 : 0, noti: k.noti ? (k.noti[L - 1] || [])[i] : null, cd: 10 + i + m};
+    });
+    mag = {car: k.car, lv, lc: k.half ? (L >= 4 ? Math.floor(L / 2) : 0) : L, fall};
+  }
+  return {L, bab, iter, sc, md, ts, ca, contatto, sprovvista, acp, avvisi, vel, pf, ini, lotta, sk, pts, speso, talN, mag, c, sp, picc, perc: 0};
+}
+function pgWeaponProf(d, w){
+  const c = pgCls(d); if (!c) return false;
+  if (w[0] === "Colpo senz'armi") return true;
+  const sp = pgSpe(d), cat = w[4][0];
+  const l = [...(c.armiX || []), ...((sp && sp.armiP) || [])];
+  if (l.includes(w[0])) return true;
+  const dio = pgDio(d); if (dio && pgDoms(d).includes('Guerra') && dio[2] === w[0]) return true;
+  if (cat === 's' && c.armi.includes('s')) return true;
+  if (cat === 'g' && c.armi.includes('g')) return true;
+  if ((d.tal || []).some(t => t.startsWith('Competenza nelle Armi')) && cat !== 's') return null;
+  return false;
+}
+function pgAttack(d, R, a){
+  const w = PGD.armi.find(x => x[0] === a.n);
+  if (!w) return {bonus: Number(a.bonus) || 0, danni: a.danni || '', w: null};
+  const dist = w[4][1] === 'd', leggera = w[4].includes('l'), due = w[4].includes('2');
+  const lancio = ['Giavellotto', 'Dardo', 'Shuriken', 'Fionda'].includes(w[0]);
+  let att = dist ? R.md.des : R.md.for;
+  if (!dist && pgHas(d, 'Arma Accurata') && (leggera || ['Stocco', 'Frusta'].includes(w[0]))) att = Math.max(att, R.md.des);
+  let prof = a.prof == null ? pgWeaponProf(d, w) : !!a.prof; if (prof == null) prof = true;
+  const bonus = att + (R.picc ? 1 : 0) + (prof ? 0 : -4) + (Number(a.bonus) || 0);
+  let dad = w[1];
+  if (R.c && d.classe === 'Monaco' && w[0] === "Colpo senz'armi") dad = R.c.col[0][1][R.L - 1];
+  if (R.picc) dad = dad.split('/').map(x => SMALL[x] || x).join('/');
+  const fm = dist && !lancio ? Math.min(0, R.md.for) : due ? Math.floor(R.md.for * 1.5) : R.md.for;
+  const dm = fm + (Number(a.bonusD) || 0);
+  return {bonus, iter: R.iter.map(b => sgn(b + bonus)).join('/'), danni: `${dad}${dm ? ' ' + sgn(dm) : ''}`, crit: w[2], tipo: w[3], w, prof};
+}
+
+let pgT = {}, pgFly = {}, pgEdit = {};
+function pgSave(id){
+  pgEdit[id] = Date.now();
+  clearTimeout(pgT[id]);
+  pgT[id] = setTimeout(() => {
+    pgT[id] = null;
+    const d = S.pg[id]; if (!S.db || !d) return;
+    pgFly[id] = (pgFly[id] || 0) + 1;
+    S.db.doc(PGC + '/' + id).set(JSON.parse(JSON.stringify(d))).then(() => { pgFly[id]--; pgEdit[id] = Date.now(); }).catch(e => { pgFly[id]--; console.error(e); toast(e && e.code === 'invalid_argument' ? 'Non puoi salvare questa scheda: chiedi al Master di invitarti come Editor' : 'Salvataggio non riuscito'); });
+  }, 700);
+}
+const pgBusy = id => !!(pgT[id] || pgFly[id] > 0 || (pgEdit[id] && Date.now() - pgEdit[id] < 4000));
+function pgSet(id, path, val){
+  const d = S.pg[id]; const ks = path.split('.'); let o = d;
+  for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] == null || typeof o[ks[i]] !== 'object') o[ks[i]] = /^\d+$/.test(ks[i + 1]) ? [] : {}; o = o[ks[i]]; }
+  o[ks[ks.length - 1]] = val;
+  pgSave(id);
+}
+
+const pgIsM = k => !!(S.pg[k] && (S.pg[k].master || /^m[0-9a-z]{6,10}$/.test(k)));
+function pgFor(nome){
+  const ks = Object.keys(S.pg).filter(k => S.pg[k].eroe === nome);
+  return ks.find(k => !pgIsM(k)) || ks[0] || null;
+}
+function pgListView(){
+  const mine = S.uid && S.pg[S.uid] ? S.uid : null, master = S.pgOwner || S.pgOff;
+  const rows = S.eroi.map(e => {
+    const id = pgFor(e.nome), d = id && S.pg[id], L = livello(e.pe);
+    let act = '';
+    if (d && (pgCanEd(id) || master)) act = `<a class="btnl" href="#pg-${esc(id)}">Apri e compila</a>`;
+    else if (d && pgIsM(id) && S.db && !mine && S.uid) act = `<a class="btnl" href="#pg-${esc(id)}">Apri</a> <button class="pri" data-act="pgtake" data-k="${esc(id)}">È il mio eroe: prendi la scheda</button>`;
+    else if (d) act = `<a class="btnl" href="#pg-${esc(id)}">Apri</a>`;
+    else if (!S.db) act = `<span class="muted">Accedi per creare la scheda</span>`;
+    else if (master) act = `<button class="pri" data-act="pgnew" data-eroe="${esc(e.nome)}">Crea la scheda</button>`;
+    else if (mine) act = '';
+    else act = `<button class="pri" data-act="pgmine" data-eroe="${esc(e.nome)}">È il mio eroe: crea la scheda</button>`;
+    const sum = d ? [d.specie, d.classe && `${d.classe} ${L}`, d.giocatore && `giocatore: ${d.giocatore}`].filter(Boolean).map(esc).join(' · ') : 'Nessuna scheda';
+    return `<div class="pgrow"><div><b>${esc(e.nome)}</b><span class="muted"> · livello ${L}</span>${id && id === mine ? ' <span class="tag">la tua</span>' : ''}<div class="muted" style="font-size:14px">${sum || 'Scheda da compilare'}</div></div><div class="row">${act}</div></div>`;
+  }).join('');
+  const fuori = Object.keys(S.pg).filter(k => !pgHero(S.pg[k]));
+  const superate = master ? Object.keys(S.pg).filter(k => pgHero(S.pg[k]) && pgIsM(k) && pgFor(S.pg[k].eroe) !== k) : [];
+  const liberi = S.eroi.filter(e => !pgFor(e.nome));
+  const nuovo = S.db && !master && !mine ? `<div class="card"><h3>Il tuo eroe non è nell'elenco?</h3><p class="muted">Crealo tu: scrivi il suo nome e compila la scheda. Il Master lo aggiungerà al gruppo per i punti esperienza.</p>
+    <div class="row"><input id="pg-nuovo" placeholder="Nome dell'eroe" aria-label="Nome dell'eroe" style="max-width:260px"><button class="pri" data-act="pgnewmine">Crea il mio eroe</button></div></div>` : '';
+  const out = fuori.length || superate.length ? `<div class="card"><h3>Eroi non ancora nel gruppo</h3><p class="muted">${master ? 'Eroi creati dai giocatori o rinominati. Aggiungili al gruppo per dar loro i punti esperienza, oppure collega la scheda a un eroe che c\'è già.' : 'Il Master li aggiungerà al gruppo.'}</p>
+    ${fuori.map(k => { const d = S.pg[k]; return `<div class="pgrow"><div><b>${esc(d.eroe || 'Senza nome')}</b>${k === mine ? ' <span class="tag">la tua</span>' : ''} <span class="muted">${esc([d.specie, d.classe, d.giocatore && 'giocatore: ' + d.giocatore].filter(Boolean).join(' · '))}</span></div><div class="row">
+      ${master && d.eroe ? `<button class="pri" data-act="pgaddg" data-k="${esc(k)}">Aggiungi al gruppo</button>` : ''}
+      ${pgCanEd(k) && liberi.length ? `<select data-pglink="${esc(k)}" aria-label="Collega a un eroe"><option value="">Collega a…</option>${liberi.map(e => `<option>${esc(e.nome)}</option>`).join('')}</select>` : ''}
+      <a class="btnl" href="#pg-${esc(k)}">Apri</a></div></div>`; }).join('')}
+    ${superate.map(k => `<div class="pgrow"><div><b>${esc(S.pg[k].eroe)}</b> <span class="muted">vecchia copia creata dal Master: il giocatore ora ha la sua scheda</span></div><div class="row"><a class="btnl" href="#pg-${esc(k)}">Apri</a><button data-act="pgdelk" data-k="${esc(k)}">Elimina la copia</button></div></div>`).join('')}</div>` : '';
+  return `<div class="card"><h2>Schede personaggi</h2><p class="muted">${master ? 'Come Master puoi creare e modificare tutte le schede.' : 'Scegli il tuo eroe, oppure crealo qui sotto: potrai modificare solo la tua scheda, le altre le puoi leggere.'} La scheda calcola da sola modificatori, tiri salvezza, attacco base, CA, punti ferita, abilità e incantesimi al giorno (regole 3.5); il livello viene dai punti esperienza del gruppo.</p>
+  ${mine ? `<p><a class="btnl" href="#pg-${esc(mine)}">Apri la tua scheda: ${esc(S.pg[mine].eroe || 'senza nome')}</a></p>` : ''}
+  ${rows || '<p class="empty">Il gruppo è ancora vuoto.</p>'}</div>${nuovo}${out}`;
+}
+
+const pgId = (id, path) => ('pg-' + id + '-' + path).replace(/[^\w-]/g, '_');
+function pgSel(id, path, val, opts, ph, dis){
+  return `<select id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" ${dis}>${ph != null ? `<option value="">${esc(ph)}</option>` : ''}${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(val ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
+}
+const pgIn = (id, path, val, dis, extra = '') => `<input id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" value="${esc(val ?? '')}" ${dis} ${extra}>`;
+const pgTa = (id, path, val, dis, rows = 3) => `<textarea id="${pgId(id, path)}" data-pg="${esc(path)}" data-pid="${esc(id)}" rows="${rows}" ${dis}>${esc(val ?? '')}</textarea>`;
+const pgCb = (id, path, val, dis, lab) => `<input type="checkbox" data-pg="${esc(path)}" data-pid="${esc(id)}" ${val ? 'checked' : ''} ${dis} aria-label="${esc(lab)}">`;
+const pgParas = t => (Array.isArray(t) ? t : [t]).map(p => `<p>${esc(p)}</p>`).join('');
+function pgFeat(key, title, lv, body){
+  const open = S.pgOpen[key];
+  return `<details class="pgf" data-pgo="${esc(key)}" ${open ? 'open' : ''}><summary>${lv != null ? `<span class="tag">${lv}º</span> ` : ''}${esc(title)}</summary>${body}</details>`;
+}
+
+
+function pgSheetView(){
+  const id = S.pgId, d = S.pg[id];
+  if (!d) return `<div class="card"><p class="empty">${S.pgLoaded ? 'Questa scheda non esiste più.' : 'Apro la scheda…'}</p><a class="btnl" href="#pg">← Schede personaggi</a></div>`;
+  const ed = pgCanEd(id), dis = ed ? '' : 'disabled', R = pgCalc(d), c = R.c, sp = R.sp, L = R.L, h = pgHero(d);
+  const n = (p, v) => pgIn(id, p, v, dis, 'inputmode="numeric"');
+  let out = `<div class="card pghead"><div class="row" style="justify-content:space-between;align-items:start"><div><a class="lnk" href="#pg">← Schede personaggi</a><h2 style="margin:6px 0 0">${esc(d.eroe || 'Senza nome')}</h2>
+    <p class="muted" style="margin:2px 0 0">${esc([sp && d.specie, c && `${d.classe} di ${L}º livello`].filter(Boolean).join(' · ') || 'Scegli razza e classe per iniziare')}${h ? ` · ${fmt(h.pe)} PE` : ''}</p></div>
+    <div class="row"><button data-act="pgcalc">↻ Ricalcola tutto</button>${ed ? `<button data-act="pgrest" data-k="lungo">Riposo (8 ore)</button>` : '<span class="tag">Sola lettura</span>'}</div></div>
+    <div class="pgg4" style="margin-top:12px">
+      <div><label>Nome dell'eroe</label>${pgIn(id, 'eroe', d.eroe, dis)}</div>
+      <div><label>Classe</label>${pgSel(id, 'classe', d.classe, Object.keys(PGD.classi), '— scegli —', dis)}</div>
+      <div><label>Razza</label>${pgSel(id, 'specie', d.specie, Object.keys(PGD.specie), '— scegli —', dis)}</div>
+      <div><label>Giocatore</label>${pgIn(id, 'giocatore', d.giocatore, dis)}</div>
+      <div><label>Allineamento</label>${pgSel(id, 'alli', d.alli, ['Legale buono', 'Neutrale buono', 'Caotico buono', 'Legale neutrale', 'Neutrale', 'Caotico neutrale', 'Legale malvagio', 'Neutrale malvagio', 'Caotico malvagio'], '—', dis)}</div>
+      <div><label>Divinità</label>${pgSel(id, 'divinita', d.divinita, [...Object.keys(PGD.dei).map(k => [k, `${k} (${PGD.dei[k][0]})`]), ['Altra', 'Altra divinità…']], 'Nessuna', dis)}</div>
+      ${d.divinita === 'Altra' ? `<div><label>Nome della divinità</label>${pgIn(id, 'divinitaAltra', d.divinitaAltra, dis)}</div>` : ''}
+      ${d.classe === 'Chierico' ? (() => { const dio = pgDio(d), opts = dio ? dio[1] : Object.keys(PGD.domini); return `<div><label>Dominio 1</label>${pgSel(id, 'dom1', d.dom1, opts.filter(x => x !== d.dom2), '— scegli —', dis)}</div><div><label>Dominio 2</label>${pgSel(id, 'dom2', d.dom2, opts.filter(x => x !== d.dom1), '— scegli —', dis)}</div>`; })() : ''}
+      ${!h ? `<div><label>Livello</label>${n('liv', d.liv)}</div>` : `<div><label>Livello</label><div class="lv">${L}</div></div>`}
+    </div>
+    ${pgDio(d) ? `<p class="muted" style="margin:8px 0 0;font-size:15px"><b>${esc(d.divinita)}</b>, ${esc(pgDio(d)[3])} · allineamento ${esc(pgDio(d)[0])} · domini: ${esc(pgDio(d)[1].join(', '))} · arma preferita: ${esc(pgDio(d)[2].toLowerCase())}</p>` : ''}
+    ${!h ? `<p class="pgwarn">${esc(d.eroe || 'Questo eroe')} non è ancora nel gruppo: il livello si scrive a mano qui sopra finché il Master non lo aggiunge.${S.pgOwner || S.pgOff ? ` <button class="sm pri" data-act="pgaddg" data-k="${esc(id)}">Aggiungi al gruppo</button>` : ''}</p>` : ''}
+    ${R.avvisi.map(a => `<p class="pgwarn">${esc(a)}</p>`).join('')}</div>`;
+  // caratteristiche
+  const pts = PCARK.reduce((s, a) => s + (PUNTI[d.base[a]] ?? 99), 0);
+  out += `<div class="card"><h3>Caratteristiche</h3>
+    <div class="row" style="margin-bottom:8px"><label style="margin:0">Metodo</label>${pgSel(id, 'metodo', d.metodo, [['manuale', 'Tiri di dado (4d6, scarta il più basso) o manuale'], ['punti', 'Acquisto a punti (25 punti)'], ['array', 'Serie d\'élite (15, 14, 13, 12, 10, 8)']], null, dis)}
+    ${d.metodo === 'punti' ? `<span class="${pts > 25 ? 'pgbad' : 'muted'}">Punti spesi: ${pts > 200 ? 'punteggi fuori dall\'intervallo 8-18' : pts + '/25'}</span>` : ''}</div>
+    <div class="pgcar">${PCARK.map(a => `<div class="pgc"><span>${PCARN[a]}</span><b>${sgn(R.md[a])}</b><em>${R.sc[a]}</em>
+      <label>Base</label>${d.metodo === 'array' ? pgSel(id, 'base.' + a, d.base[a], ARR_STD, null, dis) : n('base.' + a, d.base[a])}
+      ${sp ? `<label>Razza</label><div style="font-size:14px">${sgn(sp.bonus[a] || 0)}</div>` : ''}
+      <label>Altri aumenti</label>${n('extra.' + a, (d.extra || {})[a] || 0)}</div>`).join('')}</div>
+    <p class="muted" style="margin:6px 0 0;font-size:14px">«Altri aumenti»: +1 ogni 4 livelli (${Math.floor(L / 4)} disponibili al ${L}º livello), oggetti magici, incantesimi permanenti.</p></div>`;
+  // combattimento
+  out += `<div class="card"><h3>Combattimento</h3><div class="pgstat">
+    <div><span>Classe Armatura</span><b>${R.ca}</b><em>contatto ${R.contatto} · colto alla sprovvista ${R.sprovvista}</em></div>
+    <div><span>Punti ferita</span><b>${R.pf}</b>${c ? `<em>d${c.dv} per livello</em>` : ''}</div>
+    <div><span>Iniziativa</span><b>${sgn(R.ini)}</b></div>
+    <div><span>Velocità</span><b>${String(R.vel).replace('.', ',')} m</b></div>
+    <div><span>Attacco base</span><b>${R.iter.map(sgn).join('/')}</b></div>
+    <div><span>Lotta</span><b>${sgn(R.lotta)}</b></div></div>
+    <div class="pgstat" style="margin-top:8px">${[['f', 'Tempra'], ['r', 'Riflessi'], ['v', 'Volontà']].map(([k, t]) => `<div><span>${t}</span><b>${sgn(R.ts[k])}</b></div>`).join('')}
+      <div><span>Penalità armatura</span><b>${R.acp}</b></div>${R.mag && R.mag.fall ? `<div><span>Fallimento arcano</span><b>${R.mag.fall}%</b></div>` : ''}</div>
+    <div class="pgg4" style="margin-top:12px">
+      <div><label>Armatura</label>${pgSel(id, 'arm', d.arm, PGD.armature.map(a => [a[0], `${a[0]} (+${a[1]})`]), 'Nessuna', dis)}</div>
+      <div><label>Scudo</label>${pgSel(id, 'scudo', d.scudo, PGD.scudi.map(a => [a[0], `${a[0]} (+${a[1]})`]), 'Nessuno', dis)}</div>
+      <div><label>Armatura naturale</label>${n('caNat', d.caNat)}</div>
+      <div><label>Deviazione</label>${n('caDev', d.caDev)}</div>
+      <div><label>Altri bonus CA</label>${n('caMisc', d.caMisc)}</div>
+      <div><label>Punti ferita attuali</label>${pgIn(id, 'pfAtt', d.pfAtt, dis, `inputmode="numeric" placeholder="${R.pf} (pieni)"`)}</div>
+      <div><label>Danni non letali</label>${n('danniNL', d.danniNL)}</div>
+      <div><label>Rettifica PF massimi</label>${n('pfAgg', d.pfAgg)}</div>
+      <div><label>Bonus vari Tempra</label>${n('tsMisc.f', (d.tsMisc || {}).f)}</div>
+      <div><label>Bonus vari Riflessi</label>${n('tsMisc.r', (d.tsMisc || {}).r)}</div>
+      <div><label>Bonus vari Volontà</label>${n('tsMisc.v', (d.tsMisc || {}).v)}</div>
+    </div></div>`;
+  // attacchi
+  const ats = (d.armi || []).map((a, i) => { const r = pgAttack(d, R, a);
+    return `<tr><td>${esc(a.n)}${r.w ? `<div class="muted" style="font-size:13px">critico ${esc(r.crit)} · ${esc(r.tipo)}</div>` : ''}</td><td><b>${esc(r.iter || sgn(r.bonus))}</b></td><td>${esc(r.danni)}</td>
+      <td>${r.w ? `<label class="row" style="gap:4px;margin:0"><input type="checkbox" data-pga="${i}" data-pid="${esc(id)}" ${r.prof ? 'checked' : ''} ${dis} aria-label="Competenza"> comp.</label>` : ''}</td>
+      <td><input data-pgab="${i}" data-pid="${esc(id)}" id="pg-${esc(id)}-ab${i}" inputmode="numeric" value="${esc(a.bonus || '')}" placeholder="bonus" aria-label="Bonus a colpire (talenti, magia)" style="width:70px" ${dis}></td>
+      <td>${ed ? `<button class="sm" data-act="pgdelw" data-i="${i}" aria-label="Togli ${esc(a.n)}">✕</button>` : ''}</td></tr>`; }).join('');
+  out += `<div class="card"><h3>Attacchi</h3>${c ? `<p class="muted" style="font-size:14px;margin-top:0">Competenze nelle armi: ${esc(c.armiTxt)}${sp && sp.armiP ? ' · ' + esc(sp.armiP.join(', ')) : ''}. Senza competenza: −4.</p>` : ''}
+    <table class="pgt"><thead><tr><th>Arma</th><th>Colpire</th><th>Danni</th><th></th><th>Bonus</th><th></th></tr></thead><tbody>${ats || '<tr><td colspan="6" class="muted">Nessuna arma</td></tr>'}</tbody></table>
+    ${ed ? `<div class="row" style="margin-top:8px">${pgSel(id, '_addw', '', PGD.armi.map(w => w[0]), 'Aggiungi un\'arma…', '')}</div>` : ''}
+    <p class="muted" style="font-size:14px">I danni includono la Forza (×1,5 con le armi a due mani). Nella colonna Bonus scrivi Arma Focalizzata, armi magiche e simili.</p></div>`;
+  // abilità
+  out += `<div class="card"><h3>Abilità</h3>
+    <p class="${R.speso > R.pts ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Punti abilità spesi: ${R.speso}/${R.pts}${c ? ` ((${c.pa} + Int) × ${L + 3}${sp && sp.paExtra ? ' + umano' : ''})` : ''}. Gradi massimi: ${L + 3} nelle abilità di classe (in grassetto), ${String((L + 3) / 2).replace('.', ',')} nelle altre, che costano 2 punti per grado.</p>
+    <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Car.</th><th>Gradi</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) : '—'}</td>
+      <td>${pgIn(id, 'gradi.' + s.n, (d.gradi || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Gradi in ${esc(s.n)}" style="width:64px" ${s.troppo ? 'class="pgbadin"' : ''}`)}</td>
+      <td>${pgIn(id, 'skMisc.' + s.n, (d.skMisc || {})[s.n] || '', dis, `inputmode="numeric" aria-label="Bonus vari in ${esc(s.n)}" style="width:64px"`)}</td>
+      <td><b>${s.no ? '—' : sgn(s.v)}</b></td></tr>`).join('')}</tbody></table>
+    <p class="muted" style="font-size:14px">«—»: abilità utilizzabile solo con almeno 1 grado. Le sinergie (+2 con 5 gradi in un'abilità collegata) vanno nei bonus vari.</p></div>`;
+  // incantesimi
+  if (R.mag) {
+    const m = R.mag, sl = d.slotUsati || [];
+    out += `<div class="card"><h3>Incantesimi</h3><div class="pgstat"><div><span>Caratteristica</span><b>${PCARN[m.car]}</b></div><div><span>Livello dell'incantatore</span><b>${m.lc}</b></div>
+      ${m.fall ? `<div><span>Fallimento arcano</span><b>${m.fall}%</b></div>` : ''}</div>
+      <table class="pgt" style="margin-top:10px"><thead><tr><th>Livello</th><th>Al giorno</th><th>CD</th>${m.lv.some(x => x && x.noti != null) ? '<th>Conosciuti</th>' : ''}<th>Spesi</th><th>Incantesimi</th></tr></thead><tbody>
+      ${m.lv.map(x => x && `<tr><td>${x.i}º</td><td><b>${x.n}${x.dom ? ' + 1' : ''}</b></td><td>${x.cd}</td>${m.lv.some(y => y && y.noti != null) ? `<td>${x.noti ?? '—'}</td>` : ''}
+        <td>${x.i === 0 && x.n > 8 ? '' : Array.from({length: Math.min(12, x.n + x.dom)}, (_, k) => `<input type="checkbox" data-pgs="${x.i}" data-n="${k + 1}" data-pid="${esc(id)}" ${(sl[x.i] || 0) > k ? 'checked' : ''} ${dis} aria-label="Incantesimo di ${x.i}º livello ${k + 1} lanciato">`).join('')}</td>
+        <td>${pgTa(id, 'spellTxt.' + x.i, (d.spellTxt || {})[x.i], dis, 1)}</td></tr>`).filter(Boolean).join('')}</tbody></table>
+      <p class="muted" style="font-size:14px">Il numero al giorno include gli incantesimi bonus della ${PCARN[m.car]}${c.cast.dom ? ' e lo slot di dominio (+1)' : ''}. Serve almeno ${PCARN[m.car]} 10 + livello dell'incantesimo per lanciarlo.</p></div>`;
+  }
+  // privilegi e talenti
+  const feat = [];
+  if (c) {
+    if ((c.col || []).length) feat.push(`<div class="pgstat" style="margin-bottom:10px">${c.col.map(([nm, v]) => `<div><span>${esc(nm)}</span><b>${esc(v[L - 1])}</b></div>`).join('')}</div>`);
+    feat.push(`<h4>${esc(d.classe)}</h4>` + c.f.filter(f => f[0] <= L).map(f => pgFeat(`c${f[0]}${f[1]}`, f[1], f[0], pgParas(f[2]))).join(''));
+    const next = c.f.filter(f => f[0] > L);
+    if (next.length) feat.push(`<p class="muted" style="font-size:14px">Prossimo privilegio: ${esc(next[0][1])} al ${next[0][0]}º livello.</p>`);
+  }
+  if (pgDoms(d).length) feat.push(`<h4>Domini</h4>` + pgDoms(d).map(x => pgFeat('d' + x, 'Dominio ' + x, null, pgParas(PGD.domini[x][0]))).join(''));
+  if (sp) feat.push(`<h4>${esc(d.specie)}</h4><p class="muted" style="font-size:14px;margin:0 0 6px">Taglia ${sp.taglia === 'P' ? 'Piccola' : 'Media'} · velocità ${String(sp.vel).replace('.', ',')} m</p>` + sp.t.map(t => pgFeat('r' + t[0], t[0], null, pgParas(t[1]))).join(''));
+  const tals = (d.tal || []).filter(t => PGD.talenti[t]);
+  feat.push(`<h4>Talenti (${tals.length}/${R.talN})</h4>${tals.map(t => pgFeat('t' + t, t, null, pgParas(PGD.talenti[t]) + (ed ? `<button class="sm" data-act="pgdelt" data-n="${esc(t)}">Togli</button>` : ''))).join('') || '<p class="muted" style="margin:0">Nessun talento scelto.</p>'}
+    ${ed ? `<div style="margin-top:6px">${pgSel(id, '_addt', '', Object.keys(PGD.talenti).filter(t => !tals.includes(t)), 'Aggiungi un talento…', '')}</div>` : ''}
+    <label>Altri talenti (non in elenco)</label>${pgTa(id, 'talTxt', d.talTxt, dis, 2)}`);
+  out += `<div class="card"><h3>Privilegi, tratti e talenti</h3><p class="muted" style="font-size:14px;margin-top:0">Talenti disponibili: uno al 1º livello e uno ogni 3 livelli${sp && sp.talExtra ? ', +1 umano' : ''}${c && c.talBonus ? ', più i talenti bonus di classe' : ''}.</p>${feat.join('')}</div>`;
+  out += `<div class="pg2"><div class="card"><h3>Equipaggiamento</h3><div class="pgmon">${['mr', 'ma', 'mo', 'mp'].map(k => `<div><label>${k}</label>${n('monete.' + k, (d.monete || {})[k])}</div>`).join('')}</div>
+    <label>Oggetti</label>${pgTa(id, 'equip', d.equip, dis, 6)}<label>Lingue</label>${pgIn(id, 'lingue', d.lingue, dis)}
+    <label>Usi giornalieri (ire, scacciare, musica bardica…)</label>${pgTa(id, 'usi', d.usi, dis, 2)}</div>
+    <div class="card"><h3>Personalità e storia</h3><label>Personalità</label>${pgTa(id, 'personalita', d.personalita, dis, 2)}<label>Aspetto</label>${pgTa(id, 'aspetto', d.aspetto, dis, 2)}<label>Storia e note</label>${pgTa(id, 'storia', d.storia, dis, 5)}</div></div>`;
+  if (S.pgOwner || S.pgOff) out += `<div class="card"><h3>Gestione</h3><div class="row"><button data-act="pgdel">Elimina questa scheda</button></div></div>`;
+  return out.replace(/<label>([^<]*)<\/label>(<(?:input|select|textarea)\b[^>]*?\bid="([^"]+)")/g, '<label for="$3">$1</label>$2');
+}
+
+function pgOpenDoc(id, eroe, base){
+  if (!S.db) return;
+  if (S.pg[id]) { location.hash = 'pg-' + id; return; }
+  const d = base ? {...pgNew(eroe), ...JSON.parse(JSON.stringify(base)), eroe, master: false} : pgNew(eroe); if (!base && id[0] === 'm') d.master = true; S.pg[id] = d;
+  S.db.doc(PGC + '/' + id).set(JSON.parse(JSON.stringify(d))).then(() => { location.hash = 'pg-' + id; }).catch(e => { console.error(e); delete S.pg[id]; render(); toast(e && e.code === 'invalid_argument' ? 'Non puoi ancora salvare: chiedi al Master di invitarti come Editor' : 'Scheda non creata'); });
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t || !t.dataset.act.startsWith('pg')) return;
+  const a = t.dataset.act, id = S.pgId, d = S.pg[id];
+  if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
+  if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
+  if (a === 'pgnew') { pgOpenDoc('m' + Date.now().toString(36), t.dataset.eroe); return; }
+  if (a === 'pgmine') { if (S.uid) pgOpenDoc(S.uid, t.dataset.eroe); else toast('Accedi a Claude per creare la tua scheda'); return; }
+  if (a === 'pgtake') { const src = S.pg[t.dataset.k]; if (S.uid && src) pgOpenDoc(S.uid, src.eroe, src); return; }
+  if (a === 'pgnewmine') { const n = ($('#pg-nuovo').value || '').trim(); if (!n) { toast("Scrivi il nome dell'eroe"); return; } if (Object.values(S.pg).some(x => x.eroe === n) ) { toast('Esiste già un eroe con questo nome'); return; } if (S.uid) pgOpenDoc(S.uid, n); else toast('Accedi a Claude per creare la tua scheda'); return; }
+  if (a === 'pgaddg') { const x = S.pg[t.dataset.k]; if (x && (S.pgOwner || S.pgOff) && !S.eroi.some(e => e.nome === x.eroe)) { S.eroi.push({nome: x.eroe, pe: 0}); saveGroup(); render(); toast(x.eroe + ' aggiunto al gruppo'); } return; }
+  if (a === 'pgdelk') { if (!(S.pgOwner || S.pgOff)) return; if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma'; return; } const k = t.dataset.k; delete S.pg[k]; S.db && S.db.doc(PGC + '/' + k).delete().catch(e => console.error(e)); render(); return; }
+  if (!d || !pgCanEd(id)) return;
+  if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
+  else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
+  else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
+  else if (a === 'pgrest') { const R = pgCalc(d); const cur = d.pfAtt === '' || d.pfAtt == null ? R.pf : Number(d.pfAtt); d.pfAtt = Math.min(R.pf, cur + R.L) >= R.pf ? '' : Math.min(R.pf, cur + R.L); d.danniNL = ''; d.slotUsati = []; toast('Riposo: incantesimi recuperati e ' + R.L + ' punti ferita curati'); }
+  else if (a === 'pgdel') { if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma: elimina'; return; } delete S.pg[id]; S.db && S.db.doc(PGC + '/' + id).delete().catch(e => console.error(e)); location.hash = 'pg'; return; }
+  pgSave(id); render();
+});
+document.addEventListener('toggle', e => { const t = e.target; if (t.dataset && t.dataset.pgo) S.pgOpen[t.dataset.pgo] = t.open; }, true);
+function pgInput(t, live){
+  const id = t.dataset.pid, d = S.pg[id]; if (!d || !pgCanEd(id)) return;
+  if (t.dataset.pgm != null) { const k = Number(t.dataset.pgm), n = Number(t.dataset.n); d.morte[k] = t.checked ? n : n - 1; pgSave(id); render(); return; }
+  if (t.dataset.pgs != null) { const k = Number(t.dataset.pgs), n = Number(t.dataset.n); d.slotUsati = d.slotUsati || []; d.slotUsati[k] = t.checked ? n : n - 1; for (let i = 0; i < k; i++) if (d.slotUsati[i] == null) d.slotUsati[i] = 0; pgSave(id); render(); return; }
+  if (t.dataset.pgab != null) { const a = d.armi[Number(t.dataset.pgab)]; a.bonus = Number(String(t.value).replace(/[^\d-]/g, '')) || 0; pgSave(id); if (!live) render(); else { clearTimeout(S.rt); render(); } return; }
+  if (t.dataset.pga != null) { d.armi[Number(t.dataset.pga)].prof = t.checked; pgSave(id); render(); return; }
+  const p = t.dataset.pg; if (!p) return;
+  if (p === '_addw') { if (t.value) { d.armi = d.armi || []; d.armi.push({n: t.value}); pgSave(id); } render(); return; }
+  if (p === '_adds') { if (t.value) { d.spell = d.spell || []; d.spell.push(t.value); pgSave(id); } render(); return; }
+  if (p === '_addt') { if (t.value) { d.tal = d.tal || []; d.tal.push(t.value); pgSave(id); } render(); return; }
+  let v = t.type === 'checkbox' ? t.checked : t.value;
+  if (t.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+  if (p === 'metodo' && v === 'array') d.base = {for: 15, des: 14, cos: 13, int: 12, sag: 10, car: 8};
+  if (p === 'metodo' && v === 'punti') d.base = {for: 8, des: 8, cos: 8, int: 8, sag: 8, car: 8};
+  if (p.startsWith('base.') && d.metodo === 'array') { const a = p.slice(5), old = Number(d.base[a]), nv = Number(v), o = PCARK.find(k => k !== a && Number(d.base[k]) === nv); if (o) d.base[o] = old; }
+  pgSet(id, p, p.startsWith('base.') && d.metodo === 'array' ? Number(v) : v);
+  if (live && t.getAttribute('inputmode') !== 'numeric') { clearTimeout(S.rt); S.rt = setTimeout(render, 400); } else { clearTimeout(S.rt); render(); }
+}
+document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.pid && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && t.type !== 'checkbox'))) pgInput(t, true); });
+document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.pid && (t.tagName === 'SELECT' || t.type === 'checkbox')) pgInput(t, false); else if (t.dataset && t.dataset.pid && t.dataset.pg && t.dataset.pg[0] !== '_') { clearTimeout(S.rt); render(); } if (t.dataset && t.dataset.pglink) { const k = t.dataset.pglink; if (t.value && S.pg[k] && pgCanEd(k)) { S.pg[k].eroe = t.value; pgSave(k); render(); } } });
+(async () => {
+  try {
+    const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+    if (user) { try { S.pgOwner = !!(await user.isOwner()); } catch (_) {} try { S.uid = user.id ? await user.id() : null; } catch (_) { S.uid = null; } }
+    S.pgOff = !!window.OFF;
+    if (!db) { S.pgLoaded = true; render(); return; }
+    db.collection(PGC).onSnapshot(s => {
+      const o = {};
+      for (const x of s.docs) { const cur = S.pg[x.id]; o[x.id] = (cur && (pgBusy(x.id) || (x.metadata && x.metadata.hasPendingWrites))) ? cur : {...pgNew(''), ...JSON.parse(JSON.stringify(x.data() || {}))}; }
+      S.pg = o; S.pgLoaded = true;
+      const ae = document.activeElement; if (ae && ae.dataset && ae.dataset.pid && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      if (S.view === 'pg' || S.view === 'pgscheda') render();
+    }, e => { console.error(e); S.pgLoaded = true; });
+  } catch (e) { console.error(e); }
+})();
+
+function savedView(){
+  const ents = Object.entries(S.saved).sort((a,b)=>(b[1].creato||0)-(a[1].creato||0));
+  return `<div class="card"><h2>Incontri salvati</h2><p class="muted">La difficoltà si ricalcola sul livello attuale del gruppo.</p></div>` + (ents.length ? ents.map(([id,e])=>{
+    const el = encounterLevel(e.voci), d = difficulty(el);
+    return `<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(e.nome||'Incontro senza nome')}</h3><span><b>LI ${el ?? '—'}</b> ${d?`<span class="badge d${d[1]}">${d[0]}</span>`:''}</span></div>
+    <p style="margin:6px 0">${e.voci.map(v=>`${v.n} × ${B[v.id]?nm(v.id):esc(v.nome)} (GS ${gsTxt(v.gs)})`).join(', ')}</p>${e.note?`<p class="muted" style="margin:0 0 6px">${esc(e.note)}</p>`:''}
+    <div class="row"><select data-stato="${id}" aria-label="Stato" style="width:auto">${['Da giocare','Giocato','Scartato'].map(s=>`<option ${e.stato===s?'selected':''}>${s}</option>`).join('')}</select>
+    <button class="sm" data-act="load" data-id="${id}">Modifica</button><button class="sm" data-act="dels" data-id="${id}">Elimina</button></div></div>`; }).join('') : '<div class="card empty">Nessun incontro salvato. Costruiscine uno qui accanto.</div>');
+}
+
+function sideView(){
+  if (!ED()) return `<div class="card"><h2>Visualizzazione</h2><p class="muted">Puoi consultare gruppo, bestiario, schede e incontri salvati. Per costruire incontri e modificare i dati torna al menu principale ed entra come Master.</p><button class="pri" data-act="menu">Vai al menu principale</button></div>`;
+  const v = S.inc.voci, el = encounterLevel(v), d = difficulty(el), pl = partyLevel();
+  const seg = d ? d[1] : -1;
+  return `<div class="card"><h2>Incontro</h2>
+  <div class="el"><span class="big">${el ?? '—'}</span><span>Livello di Incontro<br>${d?`<span class="badge d${d[1]}">${d[0]}</span> per un gruppo di livello ${pl}`:'<span class="muted">aggiungi delle creature</span>'}</span></div>
+  <div class="bar" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i class="${i<=seg?'on':''}"></i>`).join('')}</div>
+  ${v.length ? v.map((x,i)=>`<div class="item"><div>${B[x.id]?nm(x.id):`<b>${esc(x.nome)}</b>`} <span class="muted">GS ${gsTxt(x.gs)}</span><br>${B[x.id]?statLine(B[x.id]):''}</div><div class="step"><button data-act="dec" data-i="${i}" aria-label="Una in meno">−</button><span>${x.n}</span><button data-act="inc" data-i="${i}" aria-label="Una in più">+</button></div></div>`).join('')
+    : '<p class="empty">Aggiungi creature dal generatore o dal bestiario.</p>'}
+  <label for="i-nome">Nome dell'incontro</label><input id="i-nome" data-i="nome" value="${esc(S.inc.nome)}" placeholder="Per esempio: I rematori della chiatta">
+  <label for="i-note">Note</label><input id="i-note" data-i="note" value="${esc(S.inc.note)}" placeholder="Terreno, tattica, tesoro…">
+  <div class="row" style="margin-top:12px"><button class="pri" data-act="savei" ${v.length?'':'disabled'}>${S.inc.id?'Aggiorna':'Salva'} l'incontro</button><button data-act="clear" ${v.length?'':'disabled'}>Svuota</button></div>
+  <p class="muted" style="font-size:14px;margin:10px 0 0">Il LI di creature diverse si calcola come nella <i>Guida del DM</i>: due creature uguali valgono GS +2, quattro GS +4; due GS 1/2 valgono un GS 1.</p></div>`;
+}
+
+// ---------- eventi
+function addVoci(v){ for (const x of v) { const ex = S.inc.voci.find(y => y.id === x.id); if (ex) ex.n += x.n; else S.inc.voci.push({...x}); } saveDraft(); render(); toast("Creature nell'incontro"); }
+function addCreature(id, n){
+  const b = B[id], ex = S.inc.voci.find(v => v.id === id);
+  if (ex) ex.n += n; else S.inc.voci.push({id, nome:b.nome, gs:b.gs, n});
+  saveDraft(); render(); toast(`${n} × ${b.nome} nell'incontro`);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a==='master' || a==='menu'){ try { sessionStorage.removeItem('tavolo-ed'); } catch(_) {} location.hash = ''; location.reload(); return; }
+  if (['add','inc','dec','clear','savei','load','dels','addh','delh','addpe','delimg','bulksave','addmix','addtab','editsch'].includes(a) && !ED()) return;
+  if (a==='editsch'){ S.edsch = Number(b.dataset.id); render(); const f = $('#sk-dv'); if (f) f.focus(); return; }
+  if (a==='cancsch'){ S.edsch = null; render(); return; }
+  if (a==='add') addCreature(Number(b.dataset.id), Number(b.dataset.n)||1);
+  else if (a==='inc'||a==='dec'){ const v = S.inc.voci[b.dataset.i]; v.n += a==='inc'?1:-1; if (v.n<=0) S.inc.voci.splice(b.dataset.i,1); saveDraft(); render(); }
+  else if (a==='clear'){ S.inc = {nome:'',note:'',voci:[]}; saveDraft(); render(); }
+  else if (a==='savei'){ const id = S.inc.id || ('i'+Date.now().toString(36)); const old = S.saved[id] || {}; const doc = {nome:S.inc.nome, note:S.inc.note, voci:S.inc.voci, stato:old.stato||'Da giocare', creato:old.creato||Date.now()}; S.saved[id]=doc; save('incontri/'+id, doc); S.inc = {nome:'',note:'',voci:[]}; saveDraft(); render(); toast('Incontro salvato'); }
+  else if (a==='load'){ const e2 = S.saved[b.dataset.id]; S.inc = {id:b.dataset.id, nome:e2.nome, note:e2.note, voci:JSON.parse(JSON.stringify(e2.voci))}; saveDraft(); render(); window.scrollTo(0,0); }
+  else if (a==='dels'){ if (b.dataset.ok!=='1'){ b.dataset.ok='1'; b.textContent='Conferma'; return; } delete S.saved[b.dataset.id]; save('incontri/'+b.dataset.id, null); render(); }
+  else if (a==='addh'){ S.eroi.push({nome:'Eroe '+(S.eroi.length+1), pe:0}); saveGroup(); render(); }
+  else if (a==='delh'){ S.eroi.splice(Number(b.dataset.i),1); saveGroup(); render(); }
+  else if (a==='addpe'){ const n = Number(String($('#addpe').value).replace(/\./g,'')); if (!n) return; S.eroi.forEach(x => x.pe = (Number(x.pe)||0) + n); $('#addpe').value=''; saveGroup(); render(); toast(`${n} PE a ogni eroe`); }
+  else if (a==='rand'){ const {gs} = neededGs(S.gen.diff, S.gen.n); const l = B.filter(x => same(x.gs, gs) && (!S.gen.tipo || x.tipo===S.gen.tipo) && inZona(x, S.gen.amb)); if (l.length) { S.pick = l[Math.floor(Math.random()*l.length)].id; render(); } }
+  else if (a==='sort'){ S.sort = b.dataset.s; render(); }
+  else if (a==='bulksave'){ if (!S.saving) bulkSave(); }
+  else if (a==='bulkclear'){ S.bulk = null; S.fast = null; render(); }
+  else if (a==='faston'){ const k = S.bulk.findIndex(x => x.id == null); S.fast = k < 0 ? 0 : k; S.sel = 0; render(); const f = $('#fastin'); if (f) { f.value=''; f.focus(); } }
+  else if (a==='fastoff'){ S.fast = null; render(); }
+  else if (a==='fastmove'){ const d = Number(b.dataset.d); if (d < 0) { S.fast = Math.max(0, S.fast-1); S.sel = 0; render(); const f = $('#fastin'); if (f) { f.value=''; f.focus(); } } else { S.fast = Math.min(S.bulk.length-1, S.fast+1); S.sel = 0; render(); const f = $('#fastin'); if (f) { f.value=''; f.focus(); } } }
+  else if (a==='fastclear'){ S.bulk[S.fast].id = null; render(); }
+  else if (a==='fastpick'){ fastPick(Number(b.dataset.id)); }
+  else if (a==='bulkskip'){ S.bulk[Number(b.dataset.i)].id = null; render(); }
+  else if (a==='delimg'){ if (b.dataset.ok!=='1'){ b.dataset.ok='1'; b.textContent='Conferma'; return; } S.imgs['m'+b.dataset.id] = ''; save('immagini/m'+b.dataset.id, null); render(); toast('Immagine rimossa'); }
+  else if (a==='mode'){ S.gen.mode = b.dataset.m; render(); }
+  else if (a==='mix'){ makeMix(); render(); }
+  else if (a==='addmix'){ addVoci(S.mix[Number(b.dataset.k)]); }
+  else if (a==='tab'){ makeTab(); render(); }
+  else if (a==='roll'){ S.roll = 1 + Math.floor(Math.random()*8); render(); }
+  else if (a==='addtab'){ addVoci(S.tab[Number(b.dataset.k)].voci); }
+  else if (a==='scheda'){ openSheet(Number(b.dataset.id)); }
+  else if (a==='close'){ closeSheet(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if ((t.dataset.h != null || t.dataset.i) && !ED()) return;
+  if (t.dataset.h != null){ const v = t.dataset.k==='pe' ? String(t.value).replace(/\D/g,'') : t.value; S.eroi[t.dataset.h][t.dataset.k] = t.dataset.k==='pe' ? Number(v||0) : v; saveGroup(); clearTimeout(S.rt); S.rt = setTimeout(render, 500); return; }
+  if (t.dataset.b){ S[t.dataset.b] = t.value; clearTimeout(S.rt); S.rt = setTimeout(render, 250); return; }
+  if (t.dataset.i && (t.dataset.i==='nome'||t.dataset.i==='note')){ S.inc[t.dataset.i] = t.value; saveDraft(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if ((t.dataset.stato || t.dataset.up || t.dataset.bulkin != null || t.dataset.bk != null) && !ED()) return;
+  if (t.dataset.up && t.files && t.files[0]) { upload(Number(t.dataset.up), t.files[0]); return; }
+  if (t.dataset.bulkin != null && t.files && t.files.length) { bulkAdd([...t.files]); t.value = ''; return; }
+  if (t.dataset.bk != null) { const x = S.bulk[Number(t.dataset.bk)], v = t.value.trim().toLowerCase(), f = B.find(b => b.nome.toLowerCase() === v || b.en.toLowerCase() === v); x.id = f ? f.id : null; render(); return; }
+  if (t.dataset.g){ const k = t.dataset.g; S.gen[k] = k==='n' ? Number(t.value) : t.type==='checkbox' ? t.checked : t.value; S.pick = null; if (k==='amb' && S.gen.mode==='tabella') S.tab = null; render(); }
+  if (t.dataset.b){ S[t.dataset.b] = t.value; render(); }
+  if (t.dataset.stato){ const id = t.dataset.stato; S.saved[id] = {...S.saved[id], stato:t.value}; save('incontri/'+id, S.saved[id]); }
+});
+function route(){
+  const h = location.hash.slice(1), m = /^m-(\d+)$/.exec(h), pm = /^pg-(.+)$/.exec(h);
+  document.body.classList.toggle('wide', h === 'pg' || !!pm);
+  if (pm) { S.view = 'pgscheda'; S.pgId = decodeURIComponent(pm[1]); render(); window.scrollTo(0,0); return; }
+  if (m && B[Number(m[1])]) { S.view = 'mostro'; S.mid = Number(m[1]); loadImg(S.mid); render(); window.scrollTo(0,0); return; }
+  S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg'].includes(h) ? h : 'gruppo'; render();
+}
+window.addEventListener('hashchange', route);
+async function sha(s){ const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2,'0')).join(''); }
+function openLogin(){
+  $('#sheet').innerHTML = `<form id="mform"><div class="row" style="justify-content:space-between;align-items:start"><h2 id="sh-t" style="margin:0">Modalità Master</h2><button type="button" class="sm" data-act="close" aria-label="Chiudi">✕</button></div>
+  <p class="muted">Inserisci la password per modificare gruppo, incontri e immagini.</p>
+  <label for="mpw">Password</label><input id="mpw" type="password" autocomplete="current-password" required>
+  <p class="pwerr" id="pwerr" aria-live="polite"></p>
+  <div class="row"><button class="pri" type="submit">Entra</button><button type="button" data-act="close">Annulla</button></div></form>`;
+  S.back = document.activeElement; $('#veil').hidden = false; $('#mpw').focus();
+}
+document.addEventListener('submit', async e => {
+  if (e.target.id === 'schform') {
+    e.preventDefault(); if (!ED()) return;
+    const id = Number(e.target.dataset.id), fd = new FormData(e.target), o = {nome: B[id].nome};
+    for (const k of SK) o[k] = String(fd.get(k) || '').trim();
+    S.schede = S.schede || {}; S.schede['m'+id] = o; S.edsch = null;
+    save('schede/m'+id, o); render(); toast('Scheda salvata'); return;
+  }
+  if (e.target.id !== 'mform') return;
+  e.preventDefault();
+  let ok = false;
+  try { ok = (await sha($('#mpw').value)) === MHASH; } catch (err) { console.error(err); }
+  if (!ok) { $('#pwerr').textContent = 'Password errata.'; $('#mpw').select(); return; }
+  S.master = true; try { sessionStorage.setItem('sala-master', '1'); } catch(_) {}
+  closeSheet(); render();
+  toast(S.canWrite ? 'Modalità Master attiva' : 'Password giusta, ma il tuo account non può modificare questa pagina');
+});
+
+async function shrink(file, max = 560){
+  const url = URL.createObjectURL(file), im = new Image();
+  try {
+    await new Promise((ok, ko) => { im.onload = ok; im.onerror = ko; im.src = url; });
+    const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+    let q = 0.8, src = c.toDataURL('image/jpeg', q);
+    while (src.length > 300000 && q > 0.4) { q -= 0.12; src = c.toDataURL('image/jpeg', q); }
+    return src;
+  } finally { URL.revokeObjectURL(url); }
+}
+async function upload(id, file){
+  if (!file.type.startsWith('image/')) { toast('Scegli un file immagine'); return; }
+  try {
+    const src = await shrink(file);
+    S.imgs['m'+id] = src; save('immagini/m'+id, {src, nome: B[id].nome}); render();
+    toast(S.db ? 'Immagine salvata' : 'Immagine visibile solo in questa pagina');
+  } catch (err) { console.error(err); toast('Immagine non leggibile'); }
+}
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\.[a-z0-9]{2,5}$/,'').replace(/[^a-z0-9]+/g,' ').trim();
+const NAMES = B.flatMap(b => [[norm(b.nome), b.id], [norm(b.en), b.id]]).sort((a, c) => c[0].length - a[0].length);
+function guess(fn){
+  const n = norm(fn.split('/').pop()), ex = NAMES.find(([k]) => k === n);
+  if (ex) return ex[1];
+  const sg = SUGG.find(s => { const k = norm(s.file); return n === k || n.includes(k); });
+  if (sg) return sg.id;
+  const c = NAMES.find(([k]) => k.length > 3 && (' ' + n + ' ').includes(' ' + k + ' '));
+  return c ? c[1] : null;
+}
+const IMG_EXT = /\.(jpe?g|png|webp|gif|bmp)$/i;
+let zipLib = null;
+function loadZipLib(){
+  return zipLib || (zipLib = new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload = () => ok(window.JSZip); s.onerror = ko; document.head.appendChild(s); }));
+}
+function bulkMsg(m){ const el = $('#bulkst'); if (el) el.textContent = m; }
+async function bulkAdd(list){
+  let files = [];
+  for (const f of list) {
+    if (/\.zip$/i.test(f.name)) {
+      try {
+        bulkMsg('Apro ' + f.name + '…');
+        const Z = await loadZipLib(), z = await Z.loadAsync(f);
+        for (const e of Object.values(z.files)) if (!e.dir && IMG_EXT.test(e.name) && !e.name.includes('__MACOSX')) {
+          const blob = await e.async('blob'), ext = e.name.split('.').pop().toLowerCase();
+          files.push(new File([blob], e.name.split('/').pop(), {type: 'image/' + (ext === 'jpg' ? 'jpeg' : ext)}));
+        }
+      } catch (err) { console.error(err); toast('Non riesco ad aprire ' + f.name); }
+    } else if (f.type.startsWith('image/') || IMG_EXT.test(f.name)) files.push(f);
+  }
+  if (!files.length) { bulkMsg('Nessuna immagine trovata.'); return; }
+  S.bulk = S.bulk || [];
+  for (let i = 0; i < files.length; i++) {
+    bulkMsg(`Preparo ${i+1} di ${files.length}…`);
+    try { S.bulk.push({name: files[i].name, src: await shrink(files[i]), id: guess(files[i].name)}); } catch (err) { console.error(err); }
+  }
+  render();
+}
+async function bulkSave(){
+  const todo = (S.bulk || []).filter(x => x.id != null);
+  if (!todo.length) return;
+  S.saving = true;
+  for (let i = 0; i < todo.length; i++) {
+    const x = todo[i];
+    bulkMsg(`Salvo ${i+1} di ${todo.length}…`);
+    S.imgs['m' + x.id] = x.src;
+    if (S.db && S.canWrite) {
+      try { await S.db.doc('immagini/m' + x.id).set({src: x.src, nome: B[x.id].nome}); x.done = true; }
+      catch (err) { console.error(err); x.err = true; if (err && err.code === 'invalid_argument') { S.canWrite = false; break; } }
+    } else x.done = true;
+  }
+  const ok = todo.filter(x => x.done).length, ko = todo.filter(x => x.err).length;
+  S.bulk = S.bulk.filter(x => !x.done); S.saving = false; render();
+  toast(ko ? `${ok} salvate, ${ko} non riuscite` : `${ok} immagini salvate`);
+}
+function loadImg(id){
+  const k = 'm' + id;
+  if (!S.db || k in S.imgs) return;
+  S.imgs[k] = null;
+  S.db.doc('immagini/' + k).get().then(s => { const x = s.exists ? s.data() : null; S.imgs[k] = x && typeof x.src === 'string' && x.src.startsWith('data:image/') ? x.src : ''; if (S.view === 'mostro' && S.mid === id) render(); }).catch(e => { console.error(e); S.imgs[k] = ''; });
+}
+document.addEventListener('dragover', e => { const p = e.target.closest && e.target.closest('#pic'); if (p && S.canWrite) { e.preventDefault(); p.classList.add('drop'); } });
+document.addEventListener('dragleave', e => { const p = e.target.closest && e.target.closest('#pic'); if (p) p.classList.remove('drop'); });
+document.addEventListener('dragover', e => { const z = e.target.closest && e.target.closest('#bulkdrop'); if (z) { e.preventDefault(); z.classList.add('drop'); } });
+document.addEventListener('drop', e => { const z = e.target.closest && e.target.closest('#bulkdrop'); if (z) { e.preventDefault(); z.classList.remove('drop'); if (ED()) bulkAdd([...e.dataTransfer.files]); } });
+document.addEventListener('drop', e => { const p = e.target.closest && e.target.closest('#pic'); if (!p || !S.canWrite) return; e.preventDefault(); p.classList.remove('drop'); const f = e.dataTransfer.files[0]; if (f && ED()) upload(Number(p.dataset.id), f); });
+$('#veil').addEventListener('click', e => { if (e.target.id === 'veil') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#veil').hidden) closeSheet(); });
+route();
+fetch('mostri35.json', {cache: 'no-cache'}).then(r => r.json()).then(d => { ST = d; render(); }).catch(e => { console.error(e); toast('Schede non caricate'); });
+(async () => {
+  try {
+    const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+    if (!db) return;
+    S.db = db; S.canWrite = !!(user && (user.isOwner() || user.canEdit()));
+    db.doc('stato/gruppo').onSnapshot(s => { if (s.exists && s.data().eroi && !s.metadata.hasPendingWrites) { S.eroi = JSON.parse(JSON.stringify(s.data().eroi)); render(); } }, e => console.error(e));
+    if (S.view === 'mostro') loadImg(S.mid);
+    db.collection('schede').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = d.data(); S.schede = o; render(); }, e => console.error(e));
+    db.collection('incontri').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = d.data(); S.saved = o; render(); }, e => console.error(e));
+  } catch(e) { console.error(e); }
+})();
+}
+</script>
+</body>
+</html>
