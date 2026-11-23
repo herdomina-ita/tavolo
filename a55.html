@@ -901,6 +901,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-act]'); if (!t || !t.dataset.act.startsWith('pg')) return;
   const a = t.dataset.act, id = S.pgId, d = S.pg[id];
   if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
+  if (a === 'pgall35') { S.pgAll35 = t.checked; render(); return; }
   if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
   if (a === 'pgnew') { pgOpenDoc('m' + Date.now().toString(36), t.dataset.eroe); return; }
   if (a === 'pgmine') { if (S.uid) pgOpenDoc(S.uid, t.dataset.eroe); else toast('Accedi a Claude per creare la tua scheda'); return; }
@@ -911,6 +912,7 @@ document.addEventListener('click', e => {
   if (!d || !pgCanEd(id)) return;
   if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
   else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
+  else if (a === 'pgdelbk') { const cl = t.dataset.cl, n = t.dataset.n; if (d.libroBk && d.libroBk[cl]) d.libroBk[cl] = d.libroBk[cl].filter(b => b.n !== n); const pr = (d.libro || {})[cl]; if (pr) for (const k of Object.keys(pr)) pr[k] = (pr[k] || []).filter(x => x !== n); }
   else if (a === 'pgdelsp') { const l = ((d.libro || {})[t.dataset.cl] || {})[t.dataset.lv]; if (l) d.libro[t.dataset.cl][t.dataset.lv] = l.filter(n => n !== t.dataset.n); }
   else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
   else if (a === 'pgrest') {
@@ -933,6 +935,7 @@ function pgInput(t, live){
   const p = t.dataset.pg; if (!p) return;
   if (p === '_addw') { if (t.value) { d.armi = d.armi || []; d.armi.push({n: t.value}); pgSave(id); } render(); return; }
   if (p === '_adds') { if (t.value) { d.spell = d.spell || []; d.spell.push(t.value); pgSave(id); } render(); return; }
+  if (p.startsWith('_addbk|')) { const cl = p.split('|')[1]; if (t.value) { const [n, lv] = t.value.split('|'); d.libroBk = d.libroBk || {}; const a = (d.libroBk[cl] = d.libroBk[cl] || []); if (!a.some(b => b.n === n)) a.push({n, lv: Number(lv)}); pgSave(id); } render(); return; }
   if (p.startsWith('_addsp|')) { const [, cl, lv] = p.split('|'); if (t.value) { d.libro = d.libro || {}; d.libro[cl] = d.libro[cl] || {}; const a = (d.libro[cl][lv] = d.libro[cl][lv] || []); a.push(t.value); a.sort((x, y) => x.localeCompare(y, 'it')); pgSave(id); } render(); return; }
   if (p === '_addt') { if (t.value) { d.tal = d.tal || []; d.tal.push(t.value); pgSave(id); } render(); return; }
   let v = t.type === 'checkbox' ? t.checked : t.value;

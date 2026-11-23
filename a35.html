@@ -777,6 +777,12 @@ function pgFeat(key, title, lv, body){
 }
 
 
+function pgBook(d, cl){
+  const out = [...(((d.libroBk || {})[cl]) || [])];
+  const prep = (d.libro || {})[cl] || {};
+  for (const [lv, l] of Object.entries(prep)) for (const n of (l || [])) if (!out.some(b => b.n === n)) out.push({n, lv: Number(lv)});
+  return out.sort((a, b) => a.lv - b.lv || a.n.localeCompare(b.n, 'it'));
+}
 function pgSheetView(){
   const id = S.pgId, d = S.pg[id];
   if (!d) return `<div class="card"><p class="empty">${S.pgLoaded ? 'Questa scheda non esiste più.' : 'Apro la scheda…'}</p><a class="btnl" href="#pg">← Schede personaggi</a></div>`;
@@ -870,12 +876,14 @@ function pgSheetView(){
     const hasN = m.lv.some(y => y && y.noti != null);
     out += `<div class="card"><h3>Incantesimi da ${esc(m.cl.toLowerCase())}</h3><div class="pgstat"><div><span>Caratteristica</span><b>${PCARN[m.car]} ${sgn(R.md[m.car])}</b></div><div><span>Livello dell'incantatore</span><b>${m.lc}</b></div>
       ${m.fall ? `<div><span>Fallimento arcano</span><b>${m.fall}%</b></div>` : ''}</div>
-      <table class="pgt" style="margin-top:10px"><thead><tr><th>Livello</th><th>Al giorno</th><th>CD</th>${hasN ? '<th>Conosciuti</th>' : ''}<th>Spesi</th><th>${PGD.classi[m.cl].cast.noti ? 'Incantesimi conosciuti' : m.cl === 'Mago' ? 'Libro degli incantesimi' : 'Incantesimi preparati'}</th></tr></thead><tbody>
+      <table class="pgt" style="margin-top:10px"><thead><tr><th>Livello</th><th>Al giorno</th><th>CD</th>${hasN ? '<th>Conosciuti</th>' : ''}<th>Spesi</th><th>${PGD.classi[m.cl].cast.noti ? 'Incantesimi conosciuti' : 'Preparati oggi (tra i conosciuti)'}</th></tr></thead><tbody>
       ${m.lv.map(x => x && `<tr><td>${x.i}º</td><td><b>${x.n}${x.dom ? ' + 1' : ''}</b></td><td>${x.cd}</td>${hasN ? `<td>${x.noti ?? '—'}</td>` : ''}
         <td>${Array.from({length: Math.min(12, x.n + x.dom)}, (_, k) => `<input type="checkbox" data-pgsc="${esc(m.cl)}" data-i="${x.i}" data-n="${k + 1}" data-pid="${esc(id)}" ${(sl[x.i] || 0) > k ? 'checked' : ''} ${dis} aria-label="Incantesimo di ${x.i}º livello ${k + 1} lanciato">`).join('')}</td>
-        <td>${(() => { const lib = ((d.libro || {})[m.cl] || {})[x.i] || [], all = (SP35[m.cl] || {})[x.i] || [], max = x.noti != null ? x.noti : x.n + x.dom, pieno = lib.length >= max;
-          return `<div class="pgbook"><span class="${lib.length > max ? 'pgbad' : 'muted'}" style="font-size:13px;min-width:38px">${lib.length}/${max}</span>${lib.map(nm => `<span class="pgchip">${esc(nm)}${ed ? `<button type="button" class="pgx" data-act="pgdelsp" data-cl="${esc(m.cl)}" data-lv="${x.i}" data-n="${esc(nm)}" aria-label="Togli ${esc(nm)}">✕</button>` : ''}</span>`).join('')}
-          ${ed && all.length && !pieno ? pgSel(id, `_addsp|${m.cl}|${x.i}`, '', all.filter(nm => !lib.includes(nm)).sort((a, b) => a.localeCompare(b, 'it')), `Aggiungi (${max - lib.length} liberi)…`, '') : ''}${pieno && max > 0 ? `<span class="tag">${lib.length > max ? 'troppi: togline ' + (lib.length - max) : 'completo'}</span>` : ''}${max === 0 ? '<span class="muted" style="font-size:13px">nessuno a questo livello</span>' : ''}${!lib.length && !ed ? '<span class="muted">—</span>' : ''}</div>`; })()}</td></tr>`).filter(Boolean).join('')}</tbody></table>
+        <td>${(() => {
+          const noti = x.noti != null, bk = pgBook(d, m.cl).filter(b => b.lv === x.i).map(b => b.n);
+          const lib = noti ? bk : (((d.libro || {})[m.cl] || {})[x.i] || []), all = bk, max = noti ? x.noti : x.n + x.dom, pieno = lib.length >= max;
+          return `<div class="pgbook"><span class="${lib.length > max ? 'pgbad' : 'muted'}" style="font-size:13px;min-width:38px">${lib.length}/${max}</span>${lib.map(nm => `<span class="pgchip">${esc(nm)}${ed ? `<button type="button" class="pgx" data-act="${noti ? 'pgdelbk' : 'pgdelsp'}" data-cl="${esc(m.cl)}" data-lv="${x.i}" data-n="${esc(nm)}" aria-label="Togli ${esc(nm)}">✕</button>` : ''}</span>`).join('')}
+          ${ed && !noti && !pieno && all.filter(nm => !lib.includes(nm)).length ? pgSel(id, `_addsp|${m.cl}|${x.i}`, '', all.filter(nm => !lib.includes(nm)), `Prepara (${max - lib.length} liberi)…`, '') : ''}${pieno && max > 0 ? `<span class="tag">${lib.length > max ? 'troppi: togline ' + (lib.length - max) : 'completo'}</span>` : ''}${max === 0 ? '<span class="muted" style="font-size:13px">nessuno a questo livello</span>' : ''}${ed && !pieno && max > 0 && (noti || !all.filter(nm => !lib.includes(nm)).length) ? '<span class="muted" style="font-size:13px">aggiungi incantesimi conosciuti in «Privilegi, tratti e talenti»</span>' : ''}</div>`; })()}</td></tr>`).filter(Boolean).join('')}</tbody></table>
       <label>Altri incantesimi (dominio, pergamene, note)</label>${pgTa(id, 'spellTxt.' + m.cl, (d.spellTxt || {})[m.cl], dis, 2)}
       <p class="muted" style="font-size:14px">Il numero al giorno include gli incantesimi bonus della ${PCARN[m.car]}${m.dom ? ' e lo slot di dominio (+1)' : ''}. Serve almeno ${PCARN[m.car]} 10 + livello dell'incantesimo per lanciarlo.</p></div>`;
   }
@@ -889,9 +897,20 @@ function pgSheetView(){
     if (next.length) feat.push(`<p class="muted" style="font-size:14px">Prossimo privilegio da ${esc(x.n.toLowerCase())}: ${esc(next[0][1])} al ${next[0][0]}º livello da ${esc(x.n.toLowerCase())}.</p>`);
   }
   for (const m of R.magie) {
-    const lib = (d.libro || {})[m.cl] || {}, righe = m.lv.filter(x => x && (lib[x.i] || []).length).map(x => `<p style="margin:4px 0"><span class="tag">${x.i}º</span> ${esc(lib[x.i].join(', '))} <span class="muted" style="font-size:13px">(CD ${x.cd})</span></p>`);
-    const altri = (d.spellTxt || {})[m.cl];
-    feat.push(`<h4>Incantesimi da ${esc(m.cl.toLowerCase())}</h4>` + (righe.join('') || '<p class="muted" style="margin:0">Nessun incantesimo scelto: aggiungili nella tabella degli incantesimi.</p>') + (altri ? `<p style="margin:4px 0"><span class="tag">altri</span> ${esc(altri)}</p>` : ''));
+    const maxLv = m.lv.reduce((a, x) => x ? Math.max(a, x.i) : a, 0), bk = pgBook(d, m.cl), tutte = S.pgAll35, opz = [];
+    const noti = {}; for (const x of m.lv) if (x && x.noti != null) noti[x.i] = x.noti;
+    for (const [cl, t] of Object.entries(SP35)) { if (!tutte && cl !== m.cl) continue; if (cl === 'Stregone' && m.cl !== 'Stregone') continue;
+      for (const [lv, l] of Object.entries(t)) { const L2 = Number(lv); if (L2 > maxLv) continue; if (noti[L2] != null && bk.filter(b => b.lv === L2).length >= noti[L2]) continue;
+        for (const nm of l) if (!bk.some(b => b.n === nm) && !opz.some(o => o[0] === nm)) opz.push([nm, L2, cl]); } }
+    opz.sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], 'it'));
+    const titolo = m.cl === 'Mago' ? 'Libro degli incantesimi' : 'Incantesimi conosciuti';
+    const prep = (d.libro || {})[m.cl] || {};
+    feat.push(`<h4>${titolo} da ${esc(m.cl.toLowerCase())} (${bk.length})</h4>
+      <div class="pgbook">${bk.map(b => `<span class="pgchip"><b style="font-size:12px;color:var(--brace)">${b.lv}º</b> ${esc(b.n)}${!PGD.classi[m.cl].cast.noti && (prep[b.lv] || []).includes(b.n) ? ' <span class="tag">preparato</span>' : ''}${ed ? `<button type="button" class="pgx" data-act="pgdelbk" data-cl="${esc(m.cl)}" data-n="${esc(b.n)}" aria-label="Togli ${esc(b.n)}">✕</button>` : ''}</span>`).join('') || '<span class="muted">Nessun incantesimo.</span>'}</div>
+      ${ed ? `<div class="row" style="margin-top:8px">${pgSel(id, `_addbk|${m.cl}`, '', opz.map(o => [o[0] + '|' + o[1], `${o[1]}º · ${o[0]}${tutte && o[2] !== m.cl ? ' (' + o[2].toLowerCase() + ')' : ''}`]), `Aggiungi un incantesimo (${opz.length})…`, '')}
+        <label class="row" style="gap:6px;margin:0"><input type="checkbox" data-act="pgall35" ${tutte ? 'checked' : ''}> Mostra gli incantesimi di tutte le classi</label></div>` : ''}
+      ${Object.keys(noti).length ? `<p class="muted" style="font-size:14px;margin:6px 0 0">Conosciuti al massimo per livello: ${Object.entries(noti).map(([k, v]) => k + 'º ' + bk.filter(b => b.lv === Number(k)).length + '/' + v).join(' · ')}.</p>` : `<p class="muted" style="font-size:14px;margin:6px 0 0">Ogni giorno prepari quelli da usare nella tabella degli incantesimi, fino al massimo di ogni livello.</p>`}
+      ${(d.spellTxt || {})[m.cl] ? `<p style="margin:6px 0 0"><span class="tag">altri</span> ${esc(d.spellTxt[m.cl])}</p>` : ''}`);
   }
   if (pgDoms(d).length) feat.push(`<h4>Domini</h4>` + pgDoms(d).map(x => pgFeat('d' + x, 'Dominio ' + x, null, pgParas(PGD.domini[x][0]))).join(''));
   if (sp) feat.push(`<h4>${esc(d.specie)}</h4><p class="muted" style="font-size:14px;margin:0 0 6px">Taglia ${sp.taglia === 'P' ? 'Piccola' : 'Media'} · velocità ${String(sp.vel).replace('.', ',')} m</p>` + sp.t.map(t => pgFeat('r' + t[0], t[0], null, pgParas(t[1]))).join(''));
@@ -918,6 +937,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-act]'); if (!t || !t.dataset.act.startsWith('pg')) return;
   const a = t.dataset.act, id = S.pgId, d = S.pg[id];
   if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
+  if (a === 'pgall35') { S.pgAll35 = t.checked; render(); return; }
   if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
   if (a === 'pgnew') { pgOpenDoc('m' + Date.now().toString(36), t.dataset.eroe); return; }
   if (a === 'pgmine') { if (S.uid) pgOpenDoc(S.uid, t.dataset.eroe); else toast('Accedi a Claude per creare la tua scheda'); return; }
@@ -928,6 +948,7 @@ document.addEventListener('click', e => {
   if (!d || !pgCanEd(id)) return;
   if (a === 'pgdelw') { d.armi.splice(Number(t.dataset.i), 1); }
   else if (a === 'pgdels') { d.spell = (d.spell || []).filter(n => n !== t.dataset.n); }
+  else if (a === 'pgdelbk') { const cl = t.dataset.cl, n = t.dataset.n; if (d.libroBk && d.libroBk[cl]) d.libroBk[cl] = d.libroBk[cl].filter(b => b.n !== n); const pr = (d.libro || {})[cl]; if (pr) for (const k of Object.keys(pr)) pr[k] = (pr[k] || []).filter(x => x !== n); }
   else if (a === 'pgdelsp') { const l = ((d.libro || {})[t.dataset.cl] || {})[t.dataset.lv]; if (l) d.libro[t.dataset.cl][t.dataset.lv] = l.filter(n => n !== t.dataset.n); }
   else if (a === 'pgdelt') { d.tal = (d.tal || []).filter(n => n !== t.dataset.n); }
   else if (a === 'pgrest') { const R = pgCalc(d); const cur = d.pfAtt === '' || d.pfAtt == null ? R.pf : Number(d.pfAtt); d.pfAtt = Math.min(R.pf, cur + R.L) >= R.pf ? '' : Math.min(R.pf, cur + R.L); d.danniNL = ''; d.slotUsati = {}; toast('Riposo: incantesimi recuperati e ' + R.L + ' punti ferita curati'); }
@@ -946,6 +967,7 @@ function pgInput(t, live){
   const p = t.dataset.pg; if (!p) return;
   if (p === '_addw') { if (t.value) { d.armi = d.armi || []; d.armi.push({n: t.value}); pgSave(id); } render(); return; }
   if (p === '_adds') { if (t.value) { d.spell = d.spell || []; d.spell.push(t.value); pgSave(id); } render(); return; }
+  if (p.startsWith('_addbk|')) { const cl = p.split('|')[1]; if (t.value) { const [n, lv] = t.value.split('|'); d.libroBk = d.libroBk || {}; const a = (d.libroBk[cl] = d.libroBk[cl] || []); if (!a.some(b => b.n === n)) a.push({n, lv: Number(lv)}); pgSave(id); } render(); return; }
   if (p.startsWith('_addsp|')) { const [, cl, lv] = p.split('|'); if (t.value) { d.libro = d.libro || {}; d.libro[cl] = d.libro[cl] || {}; const a = (d.libro[cl][lv] = d.libro[cl][lv] || []); a.push(t.value); a.sort((x, y) => x.localeCompare(y, 'it')); pgSave(id); } render(); return; }
   if (p === '_addt') { if (t.value) { d.tal = d.tal || []; d.tal.push(t.value); pgSave(id); } render(); return; }
   let v = t.type === 'checkbox' ? t.checked : t.value;
