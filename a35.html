@@ -602,7 +602,9 @@ function pgCalc(d){
   const grazia = lvIn('Paladino') >= 2 ? Math.max(0, md.car) : 0, fort = sp && sp.tsTutti ? 1 : 0;
   const tsb = {f: tsBase('f'), r: tsBase('r'), v: tsBase('v')};
   const ts = {f: tsb.f + md.cos + (pgHas(d, 'Tempra Possente') ? 2 : 0), r: tsb.r + md.des + (pgHas(d, 'Riflessi Fulminei') ? 2 : 0), v: tsb.v + md.sag + (pgHas(d, 'Volontà di Ferro') ? 2 : 0)};
-  for (const k in ts) ts[k] += grazia + fort + (Number((d.tsMisc || {})[k]) || 0);
+  const tsMag = k => Number((d.tsMag || {})[k]) || 0, tsVar = k => Number((d.tsMisc || {})[k]) || 0, tsTmp = k => Number((d.tsTemp || {})[k]) || 0;
+  for (const k in ts) ts[k] += grazia + fort + tsMag(k) + tsVar(k) + tsTmp(k);
+  const tsExtra = {grazia, fort};
   // armatura e scudo
   const ar = PGD.armature.find(x => x[0] === d.arm), sh = PGD.scudi.find(x => x[0] === d.scudo);
   let maxDes = 99; if (ar) maxDes = ar[2]; if (sh && d.scudo === 'Scudo torre') maxDes = Math.min(maxDes, 2);
@@ -676,7 +678,7 @@ function pgCalc(d){
     });
     return {cl: x.n, car: k.car, lv, lc: k.half ? (x.lv >= 4 ? Math.floor(x.lv / 2) : 0) : x.lv, fall, dom: !!k.dom};
   }).filter(m => m.lv.some(Boolean));
-  return {L, cls, prog, bab, iter, sc, md, ts, tsb, ca, contatto, sprovvista, acp, avvisi, vel, pf, pfRighe, dadi, ini, lotta, sk, pts, ptsRighe, speso, talN, magie, fall, c, sp, picc, umano};
+  return {L, cls, prog, bab, iter, sc, md, ts, tsb, tsExtra, ca, contatto, sprovvista, acp, avvisi, vel, pf, pfRighe, dadi, ini, lotta, sk, pts, ptsRighe, speso, talN, magie, fall, c, sp, picc, umano};
 }
 function pgWeaponProf(d, w){
   const cls = pgClassi(d); if (!cls.length) return false;
@@ -852,10 +854,17 @@ function pgSheetView(){
       <div><label>Punti ferita attuali</label>${pgIn(id, 'pfAtt', d.pfAtt, dis, `inputmode="numeric" placeholder="${R.pf} (pieni)"`)}</div>
       <div><label>Danni non letali</label>${n('danniNL', d.danniNL)}</div>
       <div><label>Rettifica PF massimi</label>${n('pfAgg', d.pfAgg)}</div>
-      <div><label>Bonus vari Tempra</label>${n('tsMisc.f', (d.tsMisc || {}).f)}</div>
-      <div><label>Bonus vari Riflessi</label>${n('tsMisc.r', (d.tsMisc || {}).r)}</div>
-      <div><label>Bonus vari Volontà</label>${n('tsMisc.v', (d.tsMisc || {}).v)}</div>
+      <div style="grid-column:1/-1"><label>Effetti attivi sul personaggio (incantesimi, oggetti, bonus temporanei)</label>${pgTa(id, 'effetti', d.effetti, dis, 3)}</div>
     </div></div>`;
+  // tiri salvezza
+  out += `<div class="card"><h3>Tiri salvezza</h3><table class="pgt pgsk3"><thead><tr><th>Tiro salvezza</th><th>Base</th><th>Caratteristica</th><th>Automatici</th><th>Magici</th><th>Vari</th><th>Temporanei</th><th>Totale</th></tr></thead><tbody>
+    ${[['f', 'Tempra', 'cos'], ['r', 'Riflessi', 'des'], ['v', 'Volontà', 'sag']].map(([k, t, a]) => { const tal = k === 'f' && pgHas(d, 'Tempra Possente') || k === 'r' && pgHas(d, 'Riflessi Fulminei') || k === 'v' && pgHas(d, 'Volontà di Ferro') ? 2 : 0, auto = tal + R.tsExtra.grazia + R.tsExtra.fort;
+      return `<tr><td><b>${t}</b></td><td>${sgn(R.tsb[k])}</td><td class="muted">${PCARN[a].slice(0, 3)} ${sgn(R.md[a])}</td><td class="muted" style="font-size:14px">${auto ? sgn(auto) : ''}</td>
+      <td>${pgIn(id, 'tsMag.' + k, (d.tsMag || {})[k] || 0, dis, `inputmode="numeric" aria-label="Bonus magici a ${t}" style="width:64px"`)}</td>
+      <td>${pgIn(id, 'tsMisc.' + k, (d.tsMisc || {})[k] || 0, dis, `inputmode="numeric" aria-label="Bonus vari a ${t}" style="width:64px"`)}</td>
+      <td>${pgIn(id, 'tsTemp.' + k, (d.tsTemp || {})[k] || 0, dis, `inputmode="numeric" aria-label="Bonus temporanei a ${t}" style="width:64px"`)}</td>
+      <td><b>${sgn(R.ts[k])}</b></td></tr>`; }).join('')}</tbody></table>
+    <p class="muted" style="font-size:14px">«Automatici»: talenti (Tempra Possente, Riflessi Fulminei, Volontà di Ferro), Grazia divina del paladino, fortuna halfling. «Magici»: oggetti come il mantello della resistenza. «Temporanei»: incantesimi attivi, come benedizione o preghiera.${sp && sp.t.some(x => /TS|tiri salvezza/i.test(x[1])) ? ' Bonus razziali solo in certe situazioni: vedi i tratti della razza.' : ''}</p></div>`;
   // attacchi
   const ats = (d.armi || []).map((a, i) => { const r = pgAttack(d, R, a);
     return `<tr><td>${esc(a.n)}${r.w ? `<div class="muted" style="font-size:13px">critico ${esc(r.crit)} · ${esc(r.tipo)}</div>` : ''}</td><td><b>${esc(r.iter || sgn(r.bonus))}</b></td><td>${esc(r.danni)}</td>

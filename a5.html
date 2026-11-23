@@ -857,9 +857,10 @@ function pgSheetView(){
       <div><label>Tiri salvezza contro la morte</label><div class="row" style="gap:4px">Successi ${[0, 1, 2].map(i => `<input type="checkbox" data-pgm="0" data-n="${i + 1}" data-pid="${esc(id)}" ${d.morte[0] > i ? 'checked' : ''} ${dis} aria-label="Successo ${i + 1}">`).join('')}</div>
         <div class="row" style="gap:4px">Fallimenti ${[0, 1, 2].map(i => `<input type="checkbox" data-pgm="1" data-n="${i + 1}" data-pid="${esc(id)}" ${d.morte[1] > i ? 'checked' : ''} ${dis} aria-label="Fallimento ${i + 1}">`).join('')}</div></div>
       <div><label class="row" style="gap:6px">${pgCb(id, 'isp', d.isp, dis, 'Ispirazione')} ${PG5 ? 'Ispirazione' : 'Ispirazione eroica'}</label></div>
+      <div style="grid-column:1/-1"><label>Effetti attivi sul personaggio (incantesimi, oggetti, bonus temporanei)</label>${pgTa(id, 'effetti', d.effetti, dis, 3)}</div>
     </div></div>`;
   // tiri salvezza + abilità
-  out += `<div class="pg2"><div class="card"><h3>Tiri salvezza</h3><table class="pgt">${PCARK.map(a => `<tr><td>${R.ts.has(a) ? '●' : '○'}</td><td>${PCARN[a]}</td><td><b>${sgn(R.md[a] + (R.ts.has(a) ? R.pb : 0))}</b></td></tr>`).join('')}</table>
+  out += `<div class="pg2"><div class="card"><h3>Tiri salvezza</h3><table class="pgt"><thead><tr><th></th><th>Caratteristica</th><th>Bonus vari</th><th>Totale</th></tr></thead><tbody>${PCARK.map(a => `<tr><td>${R.ts.has(a) ? '●' : '○'}</td><td>${PCARN[a]}</td><td>${pgIn(id, 'tsMisc.' + a, (d.tsMisc || {})[a] || 0, dis, `inputmode="numeric" aria-label="Bonus vari al tiro salvezza su ${PCARN[a]}" style="width:64px;text-align:center"`)}</td><td><b>${sgn(R.md[a] + (R.ts.has(a) ? R.pb : 0) + (Number((d.tsMisc || {})[a]) || 0))}</b></td></tr>`).join('')}</tbody></table>
     ${c ? `<p class="muted" style="font-size:14px">Competenze di classe: ${c.ts.map(a => PCARN[a]).join(' e ')}.</p>` : ''}</div>
     <div class="card"><h3>Abilità</h3>
     ${c ? `<p class="${R.skClasse > R.skMax ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Scelte di classe: ${R.skClasse}/${R.skMax} (tra quelle evidenziate)${R.cls.length > 1 ? ', comprese quelle date dal multiclasse' : ''}.${pgLvIn(d, 'Bardo') >= 2 ? ' Factotum: metà del bonus di competenza sulle abilità senza competenza.' : ''}</p>` : ''}
