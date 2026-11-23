@@ -934,7 +934,10 @@ function pgSheetView(){
     <label>Tratti caratteriali</label>${pgTa(id, 'tratti', d.tratti, dis, 2)}<label>Ideali</label>${pgTa(id, 'ideali', d.ideali, dis, 2)}
     <label>Legami</label>${pgTa(id, 'legami', d.legami, dis, 2)}<label>Difetti</label>${pgTa(id, 'difetti', d.difetti, dis, 2)}
     <label>Aspetto</label>${pgTa(id, 'aspetto', d.aspetto, dis, 2)}<label>Storia e note</label>${pgTa(id, 'storia', d.storia, dis, 4)}</div></div>`;
-  if (S.pgOwner || S.pgOff) out += `<div class="card"><h3>Gestione</h3><div class="row"><button data-act="pgdel">Elimina questa scheda</button></div></div>`;
+  out += `<div class="card"><h3>Gestione</h3><p class="muted" style="font-size:14px;margin-top:0">«Esporta» salva sul computer un file con tutta la scheda; «Importa» la rimette com'era, con tutti i dati. L'eroe resta collegato al gruppo.</p><div class="row">
+    <button data-act="pgexp">Esporta scheda</button>
+    ${ed ? `<label class="btnl up" for="pg-imp-${esc(id)}" style="min-height:44px">Importa scheda</label><input type="file" id="pg-imp-${esc(id)}" data-pgimp="${esc(id)}" accept=".json,application/json" hidden>` : ''}
+    ${S.pgOwner || S.pgOff ? `<button data-act="pgdel">Elimina questa scheda</button>` : ''}</div></div>`;
   return out.replace(/<label>([^<]*)<\/label>(<(?:input|select|textarea)\b[^>]*?\bid="([^"]+)")/g, '<label for="$3">$1</label>$2');
 }
 
@@ -950,6 +953,8 @@ document.addEventListener('click', e => {
   if (a === 'pgall') { S.pgAll = t.checked; render(); return; }
   if (a === 'pgall35') { S.pgAll35 = t.checked; render(); return; }
   if (a === 'pgcalc') { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); for (const el of document.querySelectorAll('#work [data-pid][data-pg]')) { if (el.tagName === 'INPUT' && el.type !== 'checkbox' && el.dataset.pg[0] !== '_' && pgCanEd(el.dataset.pid) && S.pg[el.dataset.pid]) { let v = el.value; if (el.getAttribute('inputmode') === 'numeric' && v !== '') v = Number(String(v).replace(',', '.').replace(/[^\d.-]/g, '')) || 0; pgSet(el.dataset.pid, el.dataset.pg, v); } } render(); toast('Scheda ricalcolata'); return; }
+  if (a === 'pgexp') { if (!d) return; const blob = new Blob([JSON.stringify({tavolo: 'scheda', ed: PGD.ed, data: new Date().toISOString(), scheda: d}, null, 1)], {type: 'application/json'});
+    const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = 'scheda-' + String(d.eroe || 'eroe').replace(/[^\w\-àèéìòù ]/gi, '').trim().replace(/\s+/g, '-') + '-' + PGD.ed + '.json'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 5000); toast('Scheda esportata'); return; }
   if (a === 'pgnew') { pgOpenDoc('m' + Date.now().toString(36), t.dataset.eroe); return; }
   if (a === 'pgmine') { if (S.uid) pgOpenDoc(S.uid, t.dataset.eroe); else toast('Accedi a Claude per creare la tua scheda'); return; }
   if (a === 'pgtake') { const src = S.pg[t.dataset.k]; if (S.uid && src) pgOpenDoc(S.uid, src.eroe, src); return; }
@@ -997,7 +1002,11 @@ function pgInput(t, live){
   if (live && t.getAttribute('inputmode') !== 'numeric') { clearTimeout(S.rt); S.rt = setTimeout(render, 400); } else { clearTimeout(S.rt); render(); }
 }
 document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.pid && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && t.type !== 'checkbox'))) pgInput(t, true); });
-document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.pid && (t.tagName === 'SELECT' || t.type === 'checkbox')) pgInput(t, false); else if (t.dataset && t.dataset.pid && t.dataset.pg && t.dataset.pg[0] !== '_') { clearTimeout(S.rt); render(); } if (t.dataset && t.dataset.pglink) { const k = t.dataset.pglink; if (t.value && S.pg[k] && pgCanEd(k)) { S.pg[k].eroe = t.value; pgSave(k); render(); } } });
+document.addEventListener('change', async e => { const t = e.target; if (t.dataset && t.dataset.pgimp) { const id = t.dataset.pgimp, f = t.files && t.files[0]; t.value = ''; if (!f || !S.pg[id] || !pgCanEd(id)) return;
+    try { const j = JSON.parse(await f.text()); if (!j || j.tavolo !== 'scheda' || !j.scheda || typeof j.scheda !== 'object') throw new Error('formato');
+      if (j.ed !== PGD.ed) { toast(`Questa scheda è della ${j.ed}: importala nella Sala d'Armi ${j.ed}`); return; }
+      const cur = S.pg[id], h = pgHero(cur), nd = {...pgNew(cur.eroe), ...j.scheda}; delete nd.master; if (cur.master) nd.master = true;
+      if (h) nd.legame = h.nome; S.pg[id] = nd; pgSave(id); const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); toast('Scheda importata'); } catch (err) { console.error(err); toast('File non valido: usa un file creato con «Esporta scheda»'); } return; } if (t.dataset && t.dataset.pid && (t.tagName === 'SELECT' || t.type === 'checkbox')) pgInput(t, false); else if (t.dataset && t.dataset.pid && t.dataset.pg && t.dataset.pg[0] !== '_') { clearTimeout(S.rt); render(); } if (t.dataset && t.dataset.pglink) { const k = t.dataset.pglink; if (t.value && S.pg[k] && pgCanEd(k)) { S.pg[k].eroe = t.value; pgSave(k); render(); } } });
 (async () => {
   try {
     const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
