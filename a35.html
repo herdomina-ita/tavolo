@@ -142,7 +142,7 @@ details.pgf{border-bottom:1px solid var(--line);padding:6px 0}details.pgf summar
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--brace)}
 .card h4{margin:14px 0 6px;color:var(--brace)}
 @media(max-width:800px){.pgg4{grid-template-columns:repeat(2,minmax(0,1fr))}.pgcar{grid-template-columns:repeat(3,minmax(0,1fr))}.pg2{grid-template-columns:minmax(0,1fr)}}
-table.pgsk3 input{text-align:center}input.pgbadin{border-color:var(--brace);color:var(--brace)}table.pgt td textarea{width:100%;min-height:34px}
+table.pgsk3 input{text-align:center}.pgspec{display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap}.pgspec input{width:150px!important;text-align:left!important;min-height:34px;padding:2px 6px}input.pgbadin{border-color:var(--brace);color:var(--brace)}table.pgt td textarea{width:100%;min-height:34px}
 </style>
 </head>
 <body>
@@ -585,6 +585,8 @@ const TAL_SK = {'Allerta': ['Ascoltare', 'Osservare'], 'Atletico': ['Saltare', '
 const SINERGIE = {'Acrobazia': ['Equilibrio', 'Saltare'], 'Addestrare Animali': ['Cavalcare'], 'Conoscenze (arcane)': ['Sapienza Magica'], 'Conoscenze (locali)': ['Raccogliere Informazioni'],
   'Conoscenze (nobiltà e regalità)': ['Diplomazia'], 'Percepire Intenzioni': ['Diplomazia'], 'Raggirare': ['Diplomazia', 'Intimidire', 'Rapidità di Mano'], 'Saltare': ['Acrobazia'],
   'Sopravvivenza': ['Conoscenze (natura)'], 'Utilizzare Corde': ['Artista della Fuga'], 'Artista della Fuga': ['Utilizzare Corde']};
+const SK_MULTI = ['Artigianato', 'Intrattenere', 'Professione'];
+const PABIL = PGD.abil.flatMap(([n, a, sol, pen]) => SK_MULTI.includes(n) ? [1, 2, 3].map(i => [i === 1 ? n : n + ' ' + i, a, sol, pen, n, i]) : [[n, a, sol, pen, n, 0]]);
 function pgScore(d, a){
   const sp = pgSpe(d);
   return (Number(d.base[a]) || 0) + ((sp && sp.bonus[a]) || 0) + (Number((d.extra || {})[a]) || 0);
@@ -641,12 +643,12 @@ function pgCalc(d){
   const pts = ptsRighe.reduce((a, b) => a + b, 0);
   let speso = 0;
   const gr = n => Number((d.gradi || {})[n]) || 0;
-  const sk = PGD.abil.map(([n, a, sol, pen]) => {
-    const r = gr(n), cl = cs.has(n);
+  const sk = PABIL.map(([n, a, sol, pen, base, slot]) => {
+    const r = gr(n), cl = cs.has(base);
     speso += cl ? r : r * 2;
     const parti = [];
     const add = (v, t) => { if (v) parti.push([v, t]); };
-    add((sp && sp.skb[n]) || 0, 'razza');
+    add((sp && sp.skb[base]) || 0, 'razza');
     if (picc && n === 'Nascondersi') add(4, 'taglia Piccola');
     for (const [t, l] of Object.entries(TAL_SK)) if (pgHas(d, t) && l.includes(n)) add(2, t);
     for (const [k, l] of Object.entries(SINERGIE)) if (gr(k) >= 5 && l.includes(n)) add(2, 'sinergia ' + k);
@@ -654,7 +656,7 @@ function pgCalc(d){
     const auto = parti.reduce((s, x) => s + x[0], 0), misc = Number((d.skMisc || {})[n]) || 0, m = a ? md[a] : 0;
     const v = Math.floor(r) + m + auto + misc;
     const max = cl ? L + 3 : (L + 3) / 2;
-    return {n, a, m, cl, r, v, auto, parti, max, troppo: r > max, no: sol && r <= 0};
+    return {n, base, slot, a, m, cl, r, v, auto, parti, max, troppo: r > max, no: sol && r <= 0};
   });
   // talenti disponibili
   const talBonus = cls.reduce((s, x) => s + (x.c.talBonus ? x.c.talBonus.filter(l => l <= x.lv).length : 0), 0);
@@ -854,7 +856,7 @@ function pgSheetView(){
   // abilità
   out += `<div class="card"><h3>Abilità</h3>
     <p class="${R.speso > R.pts ? 'pgbad' : 'muted'}" style="font-size:14px;margin-top:0">Punti abilità spesi: <b>${R.speso}/${R.pts}</b>${c ? ` — 1º livello: (${c.pa} ${sgn(R.md.int)} Int) × 4${R.umano ? ' + 4 umano' : ''}; livelli successivi: punti della classe di quel livello ${sgn(R.md.int)} Int${R.umano ? ' + 1 umano' : ''} (minimo 1).` : ''} Gradi massimi: ${L + 3} nelle abilità di classe (in grassetto), ${String((L + 3) / 2).replace('.', ',')} nelle altre, che costano 2 punti per grado.</p>
-    <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Caratteristica</th><th>Gradi</th><th>Automatici</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) + ' ' + sgn(s.m) : '—'}</td>
+    <table class="pgt pgsk3"><thead><tr><th>Abilità</th><th>Caratteristica</th><th>Gradi</th><th>Automatici</th><th>Vari</th><th>Totale</th></tr></thead><tbody>${R.sk.map(s => `<tr class="${s.cl ? 'pgcl' : ''}"><td>${s.slot ? `<span class="pgspec">${esc(s.base)} (${pgIn(id, 'skSpec.' + s.n, (d.skSpec || {})[s.n] || '', dis, `placeholder="${s.base === 'Artigianato' ? 'es. fabbro' : s.base === 'Intrattenere' ? 'es. canto' : 'es. marinaio'}" aria-label="Specialità di ${esc(s.base)} ${s.slot}"`)})</span>` : esc(s.n)}</td><td class="muted">${s.a ? PCARN[s.a].slice(0, 3) + ' ' + sgn(s.m) : '—'}</td>
       <td>${pgIn(id, 'gradi.' + s.n, (d.gradi || {})[s.n] || 0, dis, `inputmode="numeric" aria-label="Gradi in ${esc(s.n)}" style="width:64px" ${s.troppo ? 'class="pgbadin"' : ''}`)}</td>
       <td class="muted" style="font-size:14px" title="${esc(s.parti.map(p => sgn(p[0]) + ' ' + p[1]).join(', '))}">${s.parti.length ? s.parti.map(p => `${sgn(p[0])} ${esc(p[1])}`).join('<br>') : ''}</td>
       <td>${pgIn(id, 'skMisc.' + s.n, (d.skMisc || {})[s.n] || 0, dis, `inputmode="numeric" aria-label="Bonus vari in ${esc(s.n)}" style="width:64px"`)}</td>
