@@ -960,7 +960,7 @@ function pgSheetView(){
     const prep = (d.libro || {})[m.cl] || {};
     feat.push(`<h4>${titolo} da ${esc(m.cl.toLowerCase())} (${bk.length})</h4>
       <div class="pgbook">${bk.map(b => `<span class="pgchip"><b style="font-size:12px;color:var(--brace)">${b.lv}º</b> ${esc(b.n)}${!PGD.classi[m.cl].cast.noti && (prep[b.lv] || []).includes(b.n) ? ' <span class="tag">preparato</span>' : ''}${ed ? `<button type="button" class="pgx" data-act="pgdelbk" data-cl="${esc(m.cl)}" data-n="${esc(b.n)}" aria-label="Togli ${esc(b.n)}">✕</button>` : ''}</span>`).join('') || '<span class="muted">Nessun incantesimo.</span>'}</div>
-      ${ed ? `<div class="row" style="margin-top:8px">${pgSel(id, `_addbk|${m.cl}`, '', opz.map(o => [o[0] + '|' + o[1], `${o[1]}º · ${o[0]}${tutte && o[2] !== m.cl ? ' (' + o[2].toLowerCase() + ')' : ''}`]), `Aggiungi un incantesimo (${opz.length})…`, '')}
+      ${ed ? `<div class="row" style="margin-top:8px">${pgSel(id, `_addbk|${m.cl}`, '', opz.map(o => [o[0] + '|' + o[1], `${o[1]}º · ${o[0]}${tutte && o[2] !== m.cl ? ' (' + o[2].toLowerCase() + ')' : ''}`]), `Aggiungi un incantesimo (${opz.length})…`, '')}<button type="button" class="sm" data-act="spxopen" data-cl="${esc(m.cl)}">＋ Crea un incantesimo che manca</button><button type="button" class="sm" data-act="spxlist">Aggiunti a mano</button>
         <label class="row" style="gap:6px;margin:0"><input type="checkbox" data-act="pgall35" ${tutte ? 'checked' : ''}> Mostra gli incantesimi di tutte le classi</label></div>` : ''}
       ${Object.keys(noti).length ? `<p class="muted" style="font-size:14px;margin:6px 0 0">Conosciuti al massimo per livello: ${Object.entries(noti).map(([k, v]) => k + 'º ' + bk.filter(b => b.lv === Number(k)).length + '/' + v).join(' · ')}.</p>` : `<p class="muted" style="font-size:14px;margin:6px 0 0">Ogni giorno prepari quelli da usare nella tabella degli incantesimi, fino al massimo di ogni livello.</p>`}
       ${(d.spellTxt || {})[m.cl] ? `<p style="margin:6px 0 0"><span class="tag">altri</span> ${esc(d.spellTxt[m.cl])}</p>` : ''}`);
@@ -1066,6 +1066,117 @@ document.addEventListener('change', async e => { const t = e.target; if (t.datas
 })();
 
 document.addEventListener('keydown', e => { const t = e.target; if (!t || !t.dataset || !t.dataset.renk) return; if (e.key === 'Enter') { e.preventDefault(); pgRename(t.dataset.renk); } else if (e.key === 'Escape') { S.pgRen = null; const w = document.getElementById('work'); if (w) w.innerHTML = ''; render(); } });
+
+
+// ---------- Incantesimi aggiunti a mano (Master e giocatori) ----------
+const SPXC = PGC + 'spx';
+let SPX = {}, SPXDB = null, SP35BASE = null, SPXUI = null;
+const spxIs35 = () => typeof SP35 !== 'undefined';
+const SPX_SC = spxIs35() ? ['abiurazione','ammaliamento','divinazione','evocazione','illusione','invocazione','necromanzia','trasmutazione','universale'] : ['abiurazione','ammaliamento','divinazione','evocazione','illusione','invocazione','necromanzia','trasmutazione'];
+const spxClassi = () => spxIs35() ? ['Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone'] : ['Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone','Warlock'];
+const spxMine = x => !!(S.pgOwner || S.pgOff || (S.uid && x && x.autore === S.uid));
+const spxCanAdd = () => !!(SPXDB && (S.uid || S.pgOff || S.pgOwner));
+const spxList = () => Object.entries(SPX).map(([id, x]) => ({...x, _id: id})).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'it'));
+function spxApply(){
+  const L = spxList();
+  if (spxIs35()) {
+    if (!SP35BASE) SP35BASE = JSON.parse(JSON.stringify(SP35));
+    for (const k of Object.keys(SP35)) delete SP35[k];
+    Object.assign(SP35, JSON.parse(JSON.stringify(SP35BASE)));
+    for (const x of L) for (const [cl, lv] of Object.entries(x.lvc || {})) {
+      if (lv === '' || lv == null) continue; SP35[cl] = SP35[cl] || {}; const a = SP35[cl][String(lv)] = SP35[cl][String(lv)] || []; if (!a.includes(x.nome)) a.push(x.nome);
+    }
+  } else if (typeof SPBASE !== 'undefined' && SPBASE) {
+    SP = [...SPBASE, ...L.map(x => ({nome: x.nome, en: x.en || '', lv: Number(x.lv) || 0, scuola: x.scuola || '', classi: x.classi || [], rit: !!x.rit, tempo: x.tempo || '', gittata: x.gittata || '', comp: x.comp || '', durata: x.durata || '', conc: !!x.conc, fonte: x.fonte || 'Aggiunto a mano', cust: x._id, autore: x.autore,
+      desc: String(x.desc || '').split(/\n+/).map(t => t.trim()).filter(Boolean)}))].map((s, i) => ({...s, id: i}));
+  }
+}
+const spxTyping = () => { const a = document.activeElement; return !!(a && (a.closest && a.closest('#spxbox') || (a.dataset && a.dataset.pid && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')))); };
+(async () => {
+  try {
+    const db = await claude.use('db'); if (!db) return; SPXDB = db;
+    db.collection(SPXC).onSnapshot(s => {
+      const o = {}; for (const x of s.docs) o[x.id] = JSON.parse(JSON.stringify(x.data() || {}));
+      SPX = o; spxApply(); if (SPXUI && SPXUI.mode === 'list') spxDraw();
+      if (!spxTyping()) render();
+    }, e => console.error(e));
+  } catch (e) { console.error(e); }
+})();
+if (!document.getElementById('spx-css')) document.head.insertAdjacentHTML('beforeend', `<style id="spx-css">#spxbox{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 12px}#spxbox .spxin{background:var(--card,#fbf8f2);color:var(--ink,#221d17);border-radius:14px;max-width:760px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}#spxbox h2{margin:0 0 6px}#spxbox .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}#spxbox label{display:block;font-size:14px;margin-bottom:3px}#spxbox input[type=text],#spxbox input:not([type]),#spxbox select,#spxbox textarea{width:100%}#spxbox textarea{min-height:130px}#spxbox .cls{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:4px}#spxbox .cls label{display:flex;align-items:center;gap:6px;font-size:15px;margin:0}#spxbox .cls select{width:auto}#spxbox .it{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.1)}#spxbox .it:last-child{border-bottom:0}#spxbox .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}<\/style>`);
+function spxOpen(mode, id, cl){ SPXUI = {mode, id, cl}; spxDraw(); }
+function spxClose(){ SPXUI = null; const b = document.getElementById('spxbox'); if (b) b.remove(); }
+function spxDraw(){
+  let b = document.getElementById('spxbox');
+  if (!SPXUI) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'spxbox'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true'); document.body.appendChild(b); }
+  const L = spxList(), is35 = spxIs35();
+  if (SPXUI.mode === 'list') {
+    b.innerHTML = `<div class="spxin"><div class="row" style="justify-content:space-between"><h2>Incantesimi aggiunti a mano</h2><button type="button" data-act="spxclose" aria-label="Chiudi">✕</button></div>
+      <p class="muted">Incantesimi che mancano o creati dagli eroi. Li vedono tutti e si possono scegliere nelle schede. Chi li ha scritti e il Master li possono modificare.</p>
+      ${spxCanAdd() ? '<button type="button" class="pri" data-act="spxnew">＋ Nuovo incantesimo</button>' : '<p class="muted">Accedi per aggiungere incantesimi.</p>'}
+      <div style="margin-top:10px">${L.length ? L.map(x => `<div class="it"><div><b>${esc(x.nome)}</b> <span class="muted">· ${is35 ? Object.entries(x.lvc || {}).filter(([, v]) => v !== '' && v != null).map(([c, v]) => esc(c) + ' ' + v).join(', ') : (Number(x.lv) ? x.lv + 'º livello' : 'Trucchetto') + ' · ' + esc((x.classi || []).join(', '))} · ${esc(x.fonte || 'Aggiunto a mano')}</span></div>
+        <div class="row">${spxMine(x) ? `<button type="button" class="sm" data-act="spxedit" data-k="${esc(x._id)}">Modifica</button><button type="button" class="sm" data-act="spxdel" data-k="${esc(x._id)}">Elimina</button>` : ''}</div></div>`).join('') : '<p class="muted">Nessun incantesimo aggiunto finora.</p>'}</div></div>`;
+    return;
+  }
+  const x = SPXUI.mode === 'edit' ? (SPX[SPXUI.id] || {}) : {lv: 1, classi: SPXUI.cl ? [SPXUI.cl] : [], lvc: SPXUI.cl ? {[SPXUI.cl]: 1} : {}, fonte: ''};
+  const cls = spxClassi();
+  b.innerHTML = `<form class="spxin" id="spxform"><div class="row" style="justify-content:space-between"><h2>${SPXUI.mode === 'edit' ? 'Modifica incantesimo' : 'Nuovo incantesimo'}</h2><button type="button" data-act="spxclose" aria-label="Chiudi">✕</button></div>
+    <div class="g"><div style="grid-column:1/-1"><label for="spx-nome">Nome *</label><input id="spx-nome" required value="${esc(x.nome || '')}"></div>
+    <div><label for="spx-en">Nome originale (facoltativo)</label><input id="spx-en" value="${esc(x.en || '')}"></div>
+    <div><label for="spx-fonte">Manuale o fonte</label><input id="spx-fonte" value="${esc(x.fonte || '')}" placeholder="Es. Homebrew, Fizban…"></div>
+    ${is35 ? '' : `<div><label for="spx-lv">Livello</label><select id="spx-lv">${[0,1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${Number(x.lv) === n ? 'selected' : ''}>${n ? n + 'º livello' : 'Trucchetto'}</option>`).join('')}</select></div>`}
+    <div><label for="spx-sc">Scuola</label><select id="spx-sc"><option value="">—</option>${SPX_SC.map(s => `<option value="${s}" ${x.scuola === s ? 'selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}</select></div>
+    <div><label for="spx-tempo">Tempo di lancio</label><input id="spx-tempo" value="${esc(x.tempo || '')}" placeholder="${is35 ? '1 azione standard' : '1 azione'}"></div>
+    <div><label for="spx-git">Gittata</label><input id="spx-git" value="${esc(x.gittata || '')}"></div>
+    <div><label for="spx-comp">Componenti</label><input id="spx-comp" value="${esc(x.comp || '')}" placeholder="V, S, M"></div>
+    <div><label for="spx-dur">Durata</label><input id="spx-dur" value="${esc(x.durata || '')}"></div>
+    ${is35 ? `<div><label for="spx-ts">Tiro salvezza</label><input id="spx-ts" value="${esc(x.ts || '')}"></div><div><label for="spx-ri">Resistenza agli incantesimi</label><input id="spx-ri" value="${esc(x.ri || '')}" placeholder="Sì / No"></div>`
+      : `<div class="row" style="align-self:end"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="spx-conc" ${x.conc ? 'checked' : ''}> Concentrazione</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="spx-rit" ${x.rit ? 'checked' : ''}> Rituale</label></div>`}
+    </div>
+    <fieldset style="margin-top:12px;border:1px solid rgba(0,0,0,.15);border-radius:9px;padding:8px 12px"><legend>${is35 ? 'Classi e livello per ogni classe' : 'Classi che lo possono usare'}</legend><div class="cls">
+      ${cls.map(c => is35 ? `<label>${c} <select data-spxlvc="${c}"><option value="">—</option>${[0,1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${(x.lvc || {})[c] !== undefined && (x.lvc || {})[c] !== '' && Number((x.lvc || {})[c]) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`
+        : `<label><input type="checkbox" data-spxcl="${c}" ${(x.classi || []).includes(c) ? 'checked' : ''}> ${c}</label>`).join('')}</div></fieldset>
+    <div style="margin-top:12px"><label for="spx-desc">Descrizione (cosa fa)</label><textarea id="spx-desc">${esc(x.desc || '')}</textarea></div>
+    <div class="row" style="margin-top:12px"><button type="submit" class="pri">Salva</button><button type="button" data-act="spxlist">Tutti gli incantesimi aggiunti</button><button type="button" data-act="spxclose">Annulla</button></div></form>`;
+  setTimeout(() => { const i = document.getElementById('spx-nome'); if (i) i.focus(); }, 0);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('[data-act^="spx"]'); if (!t) { if (e.target.id === 'spxbox') spxClose(); return; }
+  const a = t.dataset.act;
+  if (a === 'spxopen') { e.preventDefault(); if (!spxCanAdd()) { toast('Accedi per aggiungere incantesimi'); return; } spxOpen('new', null, t.dataset.cl || ''); }
+  else if (a === 'spxlist') { e.preventDefault(); spxOpen('list'); }
+  else if (a === 'spxnew') spxOpen('new');
+  else if (a === 'spxclose') spxClose();
+  else if (a === 'spxedit') spxOpen('edit', t.dataset.k);
+  else if (a === 'spxdel') {
+    const x = SPX[t.dataset.k]; if (!x || !spxMine(x)) return;
+    if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma'; return; }
+    delete SPX[t.dataset.k]; spxApply(); SPXDB.doc(SPXC + '/' + t.dataset.k).delete().then(() => toast('Incantesimo eliminato')).catch(err => { console.error(err); toast('Non puoi eliminarlo'); });
+    if (SPXUI && SPXUI.mode === 'list') spxDraw(); else spxClose(); if (typeof S.sid !== 'undefined' && location.hash.startsWith('#s-')) location.hash = 'spellbook'; render();
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && SPXUI) spxClose(); });
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'spxform') return; e.preventDefault();
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const nome = v('spx-nome').trim(); if (!nome) { toast("Scrivi il nome dell'incantesimo"); return; }
+  const is35 = spxIs35(), old = SPXUI.mode === 'edit' ? SPX[SPXUI.id] : null;
+  if (old && !spxMine(old)) { toast('Può modificarlo solo chi lo ha scritto o il Master'); return; }
+  const d = {nome, en: v('spx-en').trim(), fonte: v('spx-fonte').trim() || 'Aggiunto a mano', scuola: v('spx-sc'), tempo: v('spx-tempo').trim(), gittata: v('spx-git').trim(), comp: v('spx-comp').trim(), durata: v('spx-dur').trim(), desc: v('spx-desc').trim(),
+    autore: old ? (old.autore || '') : (S.uid || 'locale'), creato: old ? (old.creato || Date.now()) : Date.now(), ed: PGD.ed};
+  if (is35) {
+    d.lvc = {}; document.querySelectorAll('#spxbox [data-spxlvc]').forEach(s => { if (s.value !== '') d.lvc[s.dataset.spxlvc] = Number(s.value); });
+    if (!Object.keys(d.lvc).length) { toast('Scegli almeno una classe con il suo livello'); return; }
+    d.classi = Object.keys(d.lvc); d.ts = v('spx-ts').trim(); d.ri = v('spx-ri').trim();
+  } else {
+    d.lv = Number(v('spx-lv')) || 0; d.classi = [...document.querySelectorAll('#spxbox [data-spxcl]')].filter(c => c.checked).map(c => c.dataset.spxcl);
+    if (!d.classi.length) { toast('Scegli almeno una classe'); return; }
+    d.conc = !!(document.getElementById('spx-conc') || {}).checked; d.rit = !!(document.getElementById('spx-rit') || {}).checked;
+  }
+  const id = old ? SPXUI.id : 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  SPX[id] = d; spxApply(); spxClose(); render();
+  SPXDB.doc(SPXC + '/' + id).set(d).then(() => toast(old ? 'Incantesimo aggiornato' : 'Incantesimo aggiunto: ' + nome)).catch(err => { console.error(err); toast('Salvataggio non riuscito'); });
+});
 
 function savedView(){
   const ents = Object.entries(S.saved).sort((a,b)=>(b[1].creato||0)-(a[1].creato||0));
