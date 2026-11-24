@@ -1073,7 +1073,7 @@ const SPXC = PGC + 'spx';
 let SPX = {}, SPXDB = null, SP35BASE = null, SPXUI = null;
 const spxIs35 = () => typeof SP35 !== 'undefined';
 const SPX_SC = spxIs35() ? ['abiurazione','ammaliamento','divinazione','evocazione','illusione','invocazione','necromanzia','trasmutazione','universale'] : ['abiurazione','ammaliamento','divinazione','evocazione','illusione','invocazione','necromanzia','trasmutazione'];
-const spxClassi = () => spxIs35() ? ['Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone'] : ['Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone','Warlock'];
+const spxClassi = () => spxIs35() ? ['Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone'] : ['Artefice','Bardo','Chierico','Druido','Mago','Paladino','Ranger','Stregone','Warlock'];
 const spxMine = x => !!(S.pgOwner || S.pgOff || (S.uid && x && x.autore === S.uid));
 const spxCanAdd = () => !!(SPXDB && (S.uid || S.pgOff || S.pgOwner));
 const spxList = () => Object.entries(SPX).map(([id, x]) => ({...x, _id: id})).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'it'));
