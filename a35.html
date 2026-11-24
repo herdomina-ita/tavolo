@@ -343,14 +343,14 @@ function saveDraft(){ try { localStorage.setItem('sala-bozza', JSON.stringify(S.
 
 // ---------- viste
 function render(){
-  for (const a of document.querySelectorAll('#nav a')) a.classList.toggle('on', a.dataset.v===(S.view==='mostro'||S.view==='immagini'?'bestiario':S.view==='pgscheda'?'pg':S.view));
+  for (const a of document.querySelectorAll('#nav a')) a.classList.toggle('on', a.dataset.v===(S.view==='mostro'||S.view==='immagini'||S.view==='mxnew'?'bestiario':S.view==='pgscheda'?'pg':S.view));
   $('#pl').innerHTML = `Livello del gruppo <b>${partyLevel()}</b> · ${S.eroi.length} eroi`;
   document.body.classList.toggle('ed', ED());
   $('#mbtn').textContent = S.master ? '← Menu · Master' : '← Menu';
   $('#mbtn').classList.toggle('on', S.master);
   const keep = {}, act = document.activeElement && document.activeElement.id;
   for (const el of document.querySelectorAll('#work input[id]:not([type=file]), #work textarea[id]')) keep[el.id] = [el.value, el.selectionStart];
-  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
+  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='mxnew' ? (ED() ? mxForm() : bestView()) : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
   for (const [id,[v,p]] of Object.entries(keep)) { const el = document.getElementById(id); if (el && el.type!=='number') { el.value = v; } }
   if (act) { const el = document.getElementById(act); if (el) { el.focus(); try { if (keep[act]) el.setSelectionRange(keep[act][1], keep[act][1]); } catch(_){} } }
   $('#side').innerHTML = sideView();
@@ -391,7 +391,7 @@ function genView(){
   <p style="margin:14px 0 6px">Gruppo di livello <b>${partyLevel()}</b> → LI obiettivo <b>${li}</b> → ${g.n} creatur${g.n>1?'e':'a'} di <b>GS ${gsTxt(gs)}</b>${g.n>1?' ciascuna':''}.</p>
   <div class="row"><button class="pri" data-act="rand" ${list.length?'':'disabled'}>Scegli a caso</button><span class="muted">${list.length} creature adatte</span></div>
   ${pick ? `<div class="cand" style="margin-top:12px;border-color:var(--brace)"><b>${g.n} × ${nm(pick.id)}</b><span class="muted">${esc(pick.en)} · GS ${gsTxt(pick.gs)} · ${esc(pick.tipo)} · ${esc(pick.amb)}</span>${statLine(pick)}<div class="row" style="margin-top:8px"><button class="sm pri" data-act="add" data-id="${pick.id}" data-n="${g.n}">Aggiungi all'incontro</button></div></div>`:''}</div>
-  <div class="card"><h3>Tutte le creature adatte</h3>${list.length ? `<div class="cands">${list.map(b=>`<div class="cand">${nm(b.id)}<span class="muted">${esc(b.en)} · ${esc(b.tipo)} · ${esc(b.amb)}</span>${statLine(b)}<div class="row" style="margin-top:6px"><button class="sm" data-act="add" data-id="${b.id}" data-n="${g.n}">Aggiungi ${g.n}</button></div></div>`).join('')}</div>`
+  <div class="card"><h3>Tutte le creature adatte</h3>${list.length ? `<div class="cands">${list.map(b=>`<div class="cand">${nm(b.id)}<span class="muted">${b.en ? esc(b.en) + ' · ' : ''}${esc(b.tipo)} · ${esc(b.amb)}</span>${statLine(b)}<div class="row" style="margin-top:6px"><button class="sm" data-act="add" data-id="${b.id}" data-n="${g.n}">Aggiungi ${g.n}</button></div></div>`).join('')}</div>`
     : `<p class="empty">Nessuna creatura con GS ${gsTxt(gs)} per questi filtri. Prova con una creatura in più o in meno, o togli un filtro.</p>`}</div>`;
 }
 
@@ -415,7 +415,7 @@ function tabView(seg){
   ${S.tab ? `<div class="card scroll"><table class="d8"><thead><tr><th>d8</th><th>Incontro</th><th class="n">LI</th><th></th></tr></thead><tbody>${S.tab.map((r,k)=>`<tr class="${S.roll===r.d?'hit':''}"><td>${r.d}</td><td>${r.voci ? r.voci.map(x=>`${x.n} × ${nm(x.id)}`).join(', ') : '<span class="muted">Nessuna combinazione adatta</span>'}<span class="mini">${r.lab}</span></td><td class="n">${r.voci?encounterLevel(r.voci):'—'}</td><td class="n">${r.voci?`<button class="sm" data-act="addtab" data-k="${k}" aria-label="Aggiungi la riga ${r.d} all'incontro">+</button>`:''}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
 }
 
-const sOf = b => { if (b.fonte) { const c = (S.schede||{})['m'+b.id] || {}; const o = {}; for (const k of SK) o[k] = c[k] || (k==='taglia' ? b.taglia : ''); return o; } const s = ST[b.en]; return s ? {taglia:s[0], dv:s[1], ini:s[2], vel:s[3], ca:s[4], att:s[5], sp:s[6], ts:s[7], al:s[8], spazio:s[9], bab:s[10], car:s[11], abil:s[12], tal:s[13], org:s[14], tes:s[15], av:s[16]} : null; };
+const sOf = b => { if (b.fonte) { const c = b.cid ? (b.sch||{}) : (S.schede||{})['m'+b.id] || {}; const o = {}; for (const k of SK) o[k] = c[k] || (k==='taglia' ? b.taglia : ''); return o; } const s = ST[b.en]; return s ? {taglia:s[0], dv:s[1], ini:s[2], vel:s[3], ca:s[4], att:s[5], sp:s[6], ts:s[7], al:s[8], spazio:s[9], bab:s[10], car:s[11], abil:s[12], tal:s[13], org:s[14], tes:s[15], av:s[16]} : null; };
 const pfOf = s => { const m = /\(([^)]*)\)\s*$/.exec(s.dv); return m ? m[1] : s.dv; };
 const statLine = b => { const s = sOf(b); return s && s.ca ? `<span class="stat">CA ${esc(s.ca)} · PF ${esc(pfOf(s))} · Iniz ${esc(s.ini)}</span>` : ''; };
 function openSheet(id){
@@ -433,7 +433,7 @@ function bestView(){
   const q = S.q.trim().toLowerCase(), lo = S.gsMin===''?-1:Number(S.gsMin), hi = S.gsMax===''?99:Number(S.gsMax);
   let list = B.filter(b => (!q || b.nome.toLowerCase().includes(q) || b.en.toLowerCase().includes(q)) && (!S.fTipo || b.tipo===S.fTipo) && inZona(b, S.fAmb) && b.gs >= lo - 0.01 && b.gs <= hi + 0.01);
   list = list.sort(S.sort==='nome' ? (a,b)=>a.nome.localeCompare(b.nome,'it') : (a,b)=>a.gs-b.gs || a.nome.localeCompare(b.nome,'it'));
-  return `<div class="card"><h2>Bestiario</h2><p class="muted">${B.length} creature dal Documento di Riferimento del Sistema 3.5 (la parte libera del <i>Manuale dei Mostri</i>). Tocca un nome per aprire la sua scheda completa.${ED()?' <a href="#immagini">Carica immagini in blocco</a>.':''} Mancano i draghi e i modelli (fantasma, lich, vampiro): per quelli vedi il manuale.</p>
+  return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Bestiario</h2>${ED() ? '<a class="btnl pri" href="#nuovo-mostro">+ Crea un mostro</a>' : ''}</div><p class="muted">${B.length > NBASE ? `${B.length - NBASE} creat${B.length - NBASE === 1 ? 'a' : 'e'} dal Master e ` : ''}${NBASE} creature dal Documento di Riferimento del Sistema 3.5 (la parte libera del <i>Manuale dei Mostri</i>). Tocca un nome per aprire la sua scheda completa.${ED()?' <a href="#immagini">Carica immagini in blocco</a>.':''} Mancano i draghi e i modelli (fantasma, lich, vampiro): per quelli vedi il manuale.</p>
   <div class="grid4"><div><label for="b-q">Cerca</label><input id="b-q" data-b="q" value="${esc(S.q)}" placeholder="Nome italiano o inglese"></div>
   <div><label for="b-t">Tipo</label><select id="b-t" data-b="fTipo"><option value="">Tutti</option>${TIPI.map(t=>`<option ${S.fTipo===t?'selected':''}>${t}</option>`).join('')}</select></div>
   <div><label for="b-a">Luogo</label><select id="b-a" data-b="fAmb"><option value="">Tutti</option>${zoneOpt(S.fAmb)}</select></div>
@@ -444,7 +444,54 @@ function bestView(){
   </tbody></table>${list.length>200?'<p class="muted">Mostro le prime 200: restringi la ricerca.</p>':''}<p class="mini" style="margin-top:12px">Crediti immagini: illustrazioni CC0 di LadyofHats (Wikimedia Commons); opere di pubblico dominio di vari autori; eventuali ritratti di Justin Nichol (opengameart.org), licenza CC BY / CC BY-SA. Illustrazioni per tipo e famiglia originali della Sala d'Armi.</p>${!list.length?'<p class="empty">Nessuna creatura trovata.</p>':''}</div>`;
 }
 
-const ORD = [...B].sort((a,b)=>a.gs-b.gs || a.nome.localeCompare(b.nome,'it')).map(b=>b.id);
+let ORD = []; const reORD = () => { ORD = [...B].sort((a,b)=>a.gs-b.gs || a.nome.localeCompare(b.nome,'it')).map(b=>b.id); }; reORD();
+// ---------- Mostri creati dal Master (3.5)
+const MXC = 'mostrix', MXF = 'Creato dal Master', NBASE = B.length;
+const MXGS = [0.125, 0.167, 0.25, 0.333, 0.5, ...Array.from({length: 30}, (_, i) => i + 1)];
+const MXTG = ['Piccolissima','Minuta','Minuscola','Piccola','Media','Grande','Enorme','Mastodontica','Colossale'];
+S.mx = {};
+function mxRebuild(){
+  B.length = NBASE;
+  Object.entries(S.mx).sort((a, b) => (a[1].t || 0) - (b[1].t || 0)).forEach(([cid, d]) => {
+    const o = {id: B.length, nome: d.nome || 'Senza nome', en: d.en || '', gs: Number(d.gs) || 1, tipo: d.tipo || 'Bestia magica', zone: d.zone || '*', fonte: MXF, pag: '', taglia: d.taglia || 'Media', cid, sch: d.sch || {}};
+    o.amb = zoneTxt(o); B.push(o);
+  });
+  reORD();
+}
+function mxForm(){
+  const f = (k, l, ph) => `<div><label for="mx-${k}">${l}</label><input id="mx-${k}" name="${k}"${ph ? ` placeholder="${esc(ph)}"` : ''}></div>`;
+  return `<div class="card mon"><a class="back" href="#bestiario">← Bestiario</a><h2 style="margin:10px 0 4px">Crea un mostro</h2>
+  <p class="muted" style="margin-top:0">Il mostro resta salvato nella Sala d'Armi e si può usare nel bestiario, negli incontri e nel generatore. Il resto della scheda lo compili subito dopo.</p>
+  <form id="mxform"><div class="grid4">${f('nome', 'Nome')}${f('en', 'Nome originale (facoltativo)')}
+  <div><label for="mx-gs">Grado di Sfida</label><select id="mx-gs" name="gs">${MXGS.map(g => `<option value="${g}" ${g === 1 ? 'selected' : ''}>${gsTxt(g)}</option>`).join('')}</select></div>
+  <div><label for="mx-tipo">Tipo</label><select id="mx-tipo" name="tipo">${TIPI.map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+  <div><label for="mx-taglia">Taglia</label><select id="mx-taglia" name="taglia">${MXTG.map(t => `<option ${t === 'Media' ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+  <div><label for="mx-zona">Luogo</label><select id="mx-zona" name="zona"><option value="*">Ovunque</option>${zoneOpt('')}</select></div></div>
+  <div class="row" style="margin-top:14px"><button class="pri" type="submit">Crea e compila la scheda</button><a class="btnl" href="#bestiario">Annulla</a></div></form></div>`;
+}
+const mxBtns = b => b.cid && ED() ? `<button data-act="mxdel" data-id="${b.id}">Elimina il mostro</button>` : '';
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'mxform') return;
+  e.preventDefault(); if (!ED()) return;
+  const fd = new FormData(e.target), g = k => String(fd.get(k) || '').trim();
+  if (!g('nome')) { toast('Scrivi il nome del mostro'); $('#mx-nome').focus(); return; }
+  const cid = 'm' + Date.now().toString(36), doc = {nome: g('nome'), en: g('en'), gs: Number(g('gs')), tipo: g('tipo'), taglia: g('taglia'), zone: g('zona') || '*', t: Date.now(), sch: {taglia: g('taglia')}};
+  S.mx[cid] = doc; save(MXC + '/' + cid, doc); mxRebuild();
+  const nb = B.find(x => x.cid === cid); S.edsch = nb.id; toast('Mostro creato: ora compila la scheda'); location.hash = 'm-' + nb.id;
+});
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act="mxdel"]'); if (!t || !ED()) return;
+  const b = B[Number(t.dataset.id)]; if (!b || !b.cid) return;
+  if (t.dataset.ok !== '1') { t.dataset.ok = '1'; t.textContent = 'Conferma: elimina'; return; }
+  delete S.mx[b.cid]; save(MXC + '/' + b.cid, null); mxRebuild(); toast('Mostro eliminato'); location.hash = 'bestiario';
+});
+function mxListen(db){
+  db.collection(MXC).onSnapshot(s => {
+    const o = {}; for (const d of s.docs) o[d.id] = d.data(); S.mx = o; mxRebuild();
+    if (/^#m-\d+$/.test(location.hash) && S.view !== 'mostro') route(); else render();
+  }, e => console.error(e));
+}
+
 const tsTxt = s => s.replace('T','Temp ').replace(' R',', Rifl ').replace(' V',', Vol ');
 function monsterView(){
   const b = B[S.mid], s = sOf(b), k = ORD.indexOf(b.id), prev = B[ORD[k-1]], next = B[ORD[k+1]];
@@ -456,7 +503,7 @@ function monsterView(){
   return `<div class="card mon">
   <div class="row" style="justify-content:space-between"><a class="back" href="#bestiario">← Bestiario</a>
     <span class="row">${prev?`<a class="btnl sm2" href="#m-${prev.id}" aria-label="Creatura precedente: ${esc(prev.nome)}">‹ ${esc(prev.nome)}</a>`:''}${next?`<a class="btnl sm2" href="#m-${next.id}" aria-label="Creatura successiva: ${esc(next.nome)}">${esc(next.nome)} ›</a>`:''}</span></div>
-  <div class="mhead"><div><h2 style="margin:10px 0 2px">${esc(b.nome)}</h2><span class="muted">${esc(b.en)} · ${esc(s.taglia)} ${esc(b.tipo.toLowerCase())}</span>${b.fonte?`<br><span class="badge">${esc(b.fonte)} · p. ${b.pag}</span>`:''}</div>
+  <div class="mhead"><div><h2 style="margin:10px 0 2px">${esc(b.nome)}</h2><span class="muted">${b.en ? esc(b.en) + ' · ' : ''}${esc(s.taglia)} ${esc(b.tipo.toLowerCase())}</span>${b.fonte?`<br><span class="badge">${esc(b.fonte)}${b.pag ? ' · p. ' + b.pag : ''}</span>`:''}</div>
     <div class="gsbox"><span>GS</span><b>${gsTxt(b.gs)}</b></div></div>
   <div class="mtop"><figure class="pic" id="pic" data-id="${b.id}">${S.imgs['m'+b.id] ? `<img src="${esc(S.imgs['m'+b.id])}" alt="${esc(b.nome)}">` : FAM.famOf(b) ? FAM.draw(FAM.famOf(b)) : EMB(b.tipo)}
     <figcaption>${S.imgs['m'+b.id] ? 'Immagine caricata' : 'Illustrazione originale'}</figcaption></figure>
@@ -464,8 +511,8 @@ function monsterView(){
     ${ED() ? `<div class="row"><label class="btnl up" for="up-img">${S.imgs['m'+b.id]?'Cambia immagine':'Carica un\'immagine'}</label><input type="file" id="up-img" accept="image/*" data-up="${b.id}" hidden>${S.imgs['m'+b.id]?`<button class="sm" data-act="delimg" data-id="${b.id}">Rimuovi</button>`:''}</div><p class="muted" style="font-size:13px;margin:6px 0 0">Oppure trascinala sul riquadro. La vedranno tutti quelli che aprono la Sala d'Armi.</p>` : ''}</div></div>
   ${b.fonte && ED() && S.edsch===b.id ? schForm(b, s) : `<table class="sb"><tbody>${rows.map(([l,v])=>`<tr><th scope="row">${l}</th><td>${v ? esc(v) : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`}
   ${b.fonte && ED() && S.edsch!==b.id ? `<div class="row" style="margin-top:10px"><button data-act="editsch" data-id="${b.id}">Compila la scheda</button></div>` : ''}
-  <div class="row" style="margin-top:14px"><button class="pri" data-act="add" data-id="${b.id}" data-n="1">Aggiungi 1 all'incontro</button><button data-act="add" data-id="${b.id}" data-n="4">Aggiungi 4</button></div>
-  ${b.fonte ? `<p class="muted" style="font-size:14px;margin:12px 0 0">Creatura del <i>${esc(b.fonte)}</i>, pagina ${b.pag}. Qui ci sono solo nome, GS, tipo e ambiente: la scheda la compila il master con i dati del suo manuale.</p>` : `<p class="muted" style="font-size:14px;margin:12px 0 0">Dati di gioco dal Documento di Riferimento del Sistema 3.5, riassunti in italiano. Per descrizione, tattiche e dettagli delle capacità vedi il <i>Manuale dei Mostri</i>.</p>`}</div>`;
+  <div class="row" style="margin-top:14px">${mxBtns(b)}<button class="pri" data-act="add" data-id="${b.id}" data-n="1">Aggiungi 1 all'incontro</button><button data-act="add" data-id="${b.id}" data-n="4">Aggiungi 4</button></div>
+  ${b.cid ? `<p class="muted" style="font-size:14px;margin:12px 0 0">Creatura creata dal Master: la vedono tutti quelli che aprono la Sala d'Armi.</p>` : b.fonte ? `<p class="muted" style="font-size:14px;margin:12px 0 0">Creatura del <i>${esc(b.fonte)}</i>, pagina ${b.pag}. Qui ci sono solo nome, GS, tipo e ambiente: la scheda la compila il master con i dati del suo manuale.</p>` : `<p class="muted" style="font-size:14px;margin:12px 0 0">Dati di gioco dal Documento di Riferimento del Sistema 3.5, riassunti in italiano. Per descrizione, tattiche e dettagli delle capacità vedi il <i>Manuale dei Mostri</i>.</p>`}</div>`;
 }
 function schForm(b, s){
   return `<form id="schform" data-id="${b.id}" class="schf"><h3 style="margin:14px 0 8px">Compila la scheda</h3>
@@ -1267,6 +1314,7 @@ function route(){
   const h = location.hash.slice(1), m = /^m-(\d+)$/.exec(h), pm = /^pg-(.+)$/.exec(h);
   document.body.classList.toggle('wide', h === 'pg' || !!pm);
   if (pm) { S.view = 'pgscheda'; S.pgId = decodeURIComponent(pm[1]); render(); window.scrollTo(0,0); return; }
+  if (h === 'nuovo-mostro') { S.view = 'mxnew'; render(); window.scrollTo(0,0); return; }
   if (m && B[Number(m[1])]) { S.view = 'mostro'; S.mid = Number(m[1]); loadImg(S.mid); render(); window.scrollTo(0,0); return; }
   S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg'].includes(h) ? h : 'gruppo'; render();
 }
@@ -1286,7 +1334,7 @@ document.addEventListener('submit', async e => {
     const id = Number(e.target.dataset.id), fd = new FormData(e.target), o = {nome: B[id].nome};
     for (const k of SK) o[k] = String(fd.get(k) || '').trim();
     S.schede = S.schede || {}; S.schede['m'+id] = o; S.edsch = null;
-    save('schede/m'+id, o); render(); toast('Scheda salvata'); return;
+    if (B[id].cid) { const d = S.mx[B[id].cid]; if (d) { d.sch = o; d.taglia = o.taglia || d.taglia; save(MXC + '/' + B[id].cid, d); B[id].sch = o; } } else save('schede/m'+id, o); render(); toast('Scheda salvata'); return;
   }
   if (e.target.id !== 'mform') return;
   e.preventDefault();
@@ -1395,6 +1443,7 @@ fetch('mostri35.json', {cache: 'no-cache'}).then(r => r.json()).then(d => { ST =
     S.db = db; S.canWrite = !!(user && (user.isOwner() || user.canEdit()));
     db.doc('stato/gruppo').onSnapshot(s => { if (s.exists && s.data().eroi && !s.metadata.hasPendingWrites) { S.eroi = JSON.parse(JSON.stringify(s.data().eroi)); render(); } }, e => console.error(e));
     if (S.view === 'mostro') loadImg(S.mid);
+    mxListen(db);
     db.collection('schede').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = d.data(); S.schede = o; render(); }, e => console.error(e));
     db.collection('incontri').onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = d.data(); S.saved = o; render(); }, e => console.error(e));
   } catch(e) { console.error(e); }
