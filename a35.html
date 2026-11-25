@@ -148,7 +148,7 @@ table.pgsk3 input{text-align:center}.pgbook{display:flex;flex-wrap:wrap;gap:6px;
 <body>
 <header>
   <h1>Sala d'Armi 3.5</h1>
-  <nav id="nav"><a href="#gruppo" data-v="gruppo">Gruppo</a><a href="#generatore" data-v="generatore">Generatore</a><a href="#bestiario" data-v="bestiario">Bestiario</a><a href="#incontri" data-v="incontri">Incontri salvati</a><a href="#pg" data-v="pg">Schede personaggi</a></nav>
+  <nav id="nav"><a href="#gruppo" data-v="gruppo">Gruppo</a><a href="#generatore" data-v="generatore">Generatore</a><a href="#bestiario" data-v="bestiario">Bestiario</a><a href="#razze" data-v="razze">Razze</a><a href="#classi" data-v="classi">Classi</a><a href="#incontri" data-v="incontri">Incontri salvati</a><a href="#pg" data-v="pg">Schede personaggi</a></nav>
   <div class="pl" id="pl"></div><button class="sm mbtn" id="mbtn" data-act="menu">← Menu</button>
 </header>
 <main><div id="work"></div><aside class="side" id="side"></aside></main>
@@ -350,7 +350,7 @@ function render(){
   $('#mbtn').classList.toggle('on', S.master);
   const keep = {}, act = document.activeElement && document.activeElement.id;
   for (const el of document.querySelectorAll('#work input[id]:not([type=file]), #work textarea[id]')) keep[el.id] = [el.value, el.selectionStart];
-  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='mxnew' ? (ED() ? mxForm() : bestView()) : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
+  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='razze' ? cpRazze() : S.view==='classi' ? cpClassi() : S.view==='mxnew' ? (ED() ? mxForm() : bestView()) : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
   for (const [id,[v,p]] of Object.entries(keep)) { const el = document.getElementById(id); if (el && el.type!=='number') { el.value = v; } }
   if (act) { const el = document.getElementById(act); if (el) { el.focus(); try { if (keep[act]) el.setSelectionRange(keep[act][1], keep[act][1]); } catch(_){} } }
   $('#side').innerHTML = sideView();
@@ -1225,6 +1225,186 @@ document.addEventListener('submit', e => {
   SPXDB.doc(SPXC + '/' + id).set(d).then(() => toast(old ? 'Incantesimo aggiornato' : 'Incantesimo aggiunto: ' + nome)).catch(err => { console.error(err); toast('Salvataggio non riuscito'); });
 });
 
+// ---------- Compendio 3.5: razze e classi da consultare
+// Manuali fuori dall'SRD: solo nome, dati di base e una sintesi scritta da noi. Per le regole complete serve il manuale.
+const CP_SRD = 'SRD 3.5', CP_PSI = 'SRD 3.5 · Psionici';
+// [nome, nome originale, manuale, tipo, DV, BAB (a/m/p), TS buoni, punti abilità, requisiti, sintesi]
+const CL35X = [
+['Psion','Psion',CP_PSI,'base',4,'p','Vol',2,'','Incantatore psionico basato sull\'Intelligenza: sceglie una disciplina (chiaroveggenza, metacreatività, psicocinesi, psicometabolismo, psicotrasporto, telepatia) e impara poteri pagati con punti potere.'],
+['Guerriero psichico','Psychic Warrior',CP_PSI,'base',8,'m','Temp',2,'','Combattente che rafforza il corpo con pochi poteri psionici basati sulla Saggezza e con molti talenti bonus psionici.'],
+['Lama dell\'anima','Soulknife',CP_PSI,'base',10,'m','Rifl, Vol',4,'','Crea una lama di energia mentale che può cambiare forma, lanciare e caricare con danni extra; nessun potere psionico.'],
+['Selvaggio','Wilder',CP_PSI,'base',6,'m','Vol',4,'','Psionico istintivo basato sul Carisma: pochi poteri, ma l\'impeto selvaggio li potenzia oltre il limite, col rischio di restare stordito.'],
+['Adepto','Adept',CP_SRD,'PNG',6,'p','Vol',2,'','Classe da PNG: incantatore divino di villaggio, con un famiglio dal 2º livello.'],
+['Aristocratico','Aristocrat',CP_SRD,'PNG',8,'m','Vol',4,'','Classe da PNG: nobili e cortigiani, competenti in tutte le armi e armature, molte abilità sociali.'],
+['Popolano','Commoner',CP_SRD,'PNG',4,'p','—',2,'','Classe da PNG: contadini e gente comune, una sola arma semplice.'],
+['Esperto','Expert',CP_SRD,'PNG',6,'m','Vol',6,'','Classe da PNG: artigiani, sapienti e professionisti; sceglie liberamente 10 abilità di classe.'],
+['Combattente','Warrior',CP_SRD,'PNG',8,'a','Temp',2,'','Classe da PNG: soldati e guardie, competente in armi e armature.'],
+['Arciere arcano','Arcane Archer',CP_SRD,'prestigio',8,'a','Temp, Rifl',4,'Elfo o mezzelfo; BAB +6; Arma Focalizzata (arco lungo o corto), Tiro Ravvicinato, Tiro Preciso; incantesimi arcani di 1º livello.','Infonde magia nelle frecce: frecce incantate, imbevute di incantesimi, cercatrici, che attraversano i piani, a raffica e infine la freccia della morte.'],
+['Mistificatore arcano','Arcane Trickster',CP_SRD,'prestigio',4,'p','Rifl, Vol',4,'Non legale; Decifrare Scritture 7, Disattivare Congegni 7, Raggirare 7, Scassinare 7; incantesimi arcani di 3º livello (con mano magica); attacco furtivo +2d6.','Unisce ladro e mago: continua ad avanzare negli incantesimi e aggiunge attacco furtivo a distanza e furti con la telecinesi.'],
+['Assassino','Assassin',CP_SRD,'prestigio',6,'m','Rifl',4,'Malvagio; Muoversi Silenziosamente 8, Nascondersi 8, Travestimento 4; uccidere qualcuno per entrare.','Studia il bersaglio per un colpo mortale, ha attacco furtivo, uso dei veleni e pochi incantesimi arcani basati sull\'Intelligenza.'],
+['Guardia nera','Blackguard',CP_SRD,'prestigio',10,'a','Temp',2,'Malvagio; BAB +6; Conoscenze (religioni) 2, Nascondersi 5; Attacco Poderoso, Incalzare, Spezzare Migliorato; patto con un esterno malvagio.','Il paladino oscuro: punire il bene, aura di disperazione, comandare non morti, incantesimi divini e un servitore immondo.'],
+['Discepolo dei draghi','Dragon Disciple',CP_SRD,'prestigio',12,'m','Temp, Vol',2,'Non drago; Conoscenze (arcane) 8; parla Draconico; incantesimi arcani senza preparazione.','Risveglia il sangue di drago: armatura naturale, caratteristiche più alte, morso e artigli, soffio, ali e infine la sagoma mezzodrago.'],
+['Duellante','Duelist',CP_SRD,'prestigio',10,'a','Rifl',4,'BAB +6; Acrobazia 5, Intrattenere 3; Arma Accurata, Mobilità, Schivare.','Schermitore leggero: aggiunge l\'Intelligenza alla CA, para, contrattacca e colpisce con precisione chi non è immune.'],
+['Difensore nanico','Dwarven Defender',CP_SRD,'prestigio',12,'a','Temp, Vol',2,'Nano, legale; BAB +7; Robustezza, Resistenza Fisica, Schivare.','Il muro che non arretra: posizione difensiva che aumenta forza e costituzione, riduzione del danno e senso del pericolo.'],
+['Cavaliere mistico','Eldritch Knight',CP_SRD,'prestigio',6,'a','Temp',2,'Competente in tutte le armi da guerra; incantesimi arcani di 3º livello.','Guerriero e mago insieme: un talento bonus al 1º livello, poi avanza negli incantesimi arcani e nel combattimento; al 10º lancia incantesimi e colpisce nello stesso round.'],
+['Ierofante','Hierophant',CP_SRD,'prestigio',8,'p','Temp, Vol',2,'Conoscenze (religioni) 15; un talento di metamagia; incantesimi divini di 7º livello.','Sommo sacerdote: a ogni livello sceglie un potere speciale (incanalare, punire, alleati planari, incantesimi potenziati e altro).'],
+['Viandante dell\'orizzonte','Horizon Walker',CP_SRD,'prestigio',8,'a','Temp',4,'Conoscenze (geografia) 8; Resistenza Fisica.','Esploratore di terre e piani: acquisisce padronanza di ambienti (deserto, montagna, piani...) con bonus contro le creature che li abitano.'],
+['Maestro del sapere','Loremaster',CP_SRD,'prestigio',4,'p','Vol',4,'Conoscenze in due campi 10; tre talenti di metamagia o creazione e Abilità Focalizzata (una Conoscenza); 7 divinazioni di cui una di 3º livello.','Sapiente che continua ad avanzare negli incantesimi e ottiene segreti, conoscenze, lingue e la capacità di identificare oggetti magici.'],
+['Teurgo mistico','Mystic Theurge',CP_SRD,'prestigio',4,'p','Vol',2,'Conoscenze (arcane) 6, Conoscenze (religioni) 6; incantesimi arcani di 2º e divini di 2º livello.','Avanza contemporaneamente in una classe di incantatore arcano e in una divina.'],
+['Danzatore delle ombre','Shadowdancer',CP_SRD,'prestigio',8,'m','Rifl',6,'Muoversi Silenziosamente 8, Nascondersi 10, Intrattenere (danza) 5; Combattere alla Cieca, Mobilità, Schivare.','Si nasconde in piena vista, salta tra le ombre, evoca un compagno ombra e vede al buio.'],
+['Taumaturgo','Thaumaturgist',CP_SRD,'prestigio',4,'p','Vol',2,'Evocazione Potenziata; incantesimi divini con alleato planare inferiore.','Specialista delle evocazioni di esterni: alleati planari migliori e più lunghi, un compagno extraplanare e un contingente planare.'],
+['Cerebromante','Cerebremancer',CP_PSI,'prestigio',4,'p','Vol',2,'Conoscenze (arcane) 6, Conoscenze (psioniche) 6; incantesimi arcani di 2º livello e poteri di 2º livello.','L\'equivalente psionico del teurgo mistico: avanza insieme negli incantesimi arcani e nei poteri psionici.'],
+['Elocatore','Elocater',CP_PSI,'prestigio',6,'m','Rifl',4,'Vedi SRD psionico.','Maestro del movimento psionico: si sposta a scatti e cammina su pareti e soffitti.'],
+['Metamente','Metamind',CP_PSI,'prestigio',4,'p','Vol',2,'Vedi SRD psionico.','Concentra la mente per ottenere moltissimi punti potere extra.'],
+['Pirocineta','Pyrokineticist',CP_PSI,'prestigio',8,'m','Rifl',4,'Vedi SRD psionico.','Ossessionato dal fuoco: mani di fuoco, armi infuocate e un elementale di fuoco da controllare.'],
+['Sterminatore','Slayer',CP_PSI,'prestigio',10,'a','Temp, Vol',4,'Vedi SRD psionico.','Cacciatore di mind flayer e altre aberrazioni psioniche.'],
+['Signore degli schiavi','Thrallherd',CP_PSI,'prestigio',4,'p','Vol',2,'Vedi SRD psionico.','Telepate che attira seguaci e un servitore fedele grazie al proprio carisma mentale.'],
+['Mente guerriera','War Mind',CP_PSI,'prestigio',10,'a','Temp, Vol',2,'Vedi SRD psionico.','Guerriero psionico che entra in sintonia con la battaglia e moltiplica i colpi.'],
+// Manuale del Giocatore II
+['Ammaliatore','Beguiler','Manuale del Giocatore II','base',6,'p','Vol',6,'','Incantatore arcano spontaneo con un elenco fisso di ammaliamenti e illusioni; molte abilità da ladro e attacco furtivo contro chi è sorpreso.'],
+['Sciamano del drago','Dragon Shaman','Manuale del Giocatore II','base',10,'m','Temp, Vol',2,'','Adepto di un drago totem: aure che rinforzano gli alleati, soffio, resistenza all\'energia e infine ali.'],
+['Lama del crepuscolo','Duskblade','Manuale del Giocatore II','base',8,'a','Temp, Vol',2,'','Guerriero-mago che lancia incantesimi arcani in armatura e scarica gli incantesimi a contatto attraverso la spada.'],
+['Cavaliere','Knight','Manuale del Giocatore II','base',12,'a','Temp, Vol',2,'','Campione del codice cavalleresco: sfida i nemici, li costringe a combattere lui, difende gli alleati e combatte a cavallo.'],
+// Perfetto Combattente
+['Lama maledetta','Hexblade','Perfetto Combattente','base',10,'a','Vol',2,'','Guerriero che lancia maledizioni: indebolisce i nemici con la sua maledizione, ha incantesimi arcani e un famiglio oscuro.'],
+['Samurai','Samurai','Perfetto Combattente','base',10,'a','Temp',2,'','Combatte con katana e wakizashi insieme e intimidisce gli avversari con lo sguardo.'],
+['Spadaccino','Swashbuckler','Perfetto Combattente','base',10,'a','Temp',4,'','Combattente agile e brillante: aggiunge l\'Intelligenza ai danni, schiva e si rialza con grazia.'],
+// Perfetto Arcanista
+['Warlock','Warlock','Perfetto Arcanista','base',6,'m','Vol',2,'','Ha stretto un patto: lancia a volontà la deflagrazione mistica e impara invocazioni usabili a volontà.'],
+['Mago da guerra','Warmage','Perfetto Arcanista','base',6,'p','Vol',2,'','Incantatore arcano spontaneo con un elenco fisso di incantesimi d\'attacco; lancia in armatura leggera.'],
+['Wu jen','Wu Jen','Perfetto Arcanista','base',4,'p','Vol',2,'','Mago orientale legato agli elementi, con tabù personali e incantesimi che può rendere più forti.'],
+// Perfetto Sacerdote
+['Anima prescelta','Favored Soul','Perfetto Sacerdote','base',8,'m','Temp, Rifl, Vol',2,'','Prescelto da una divinità: lancia incantesimi divini da chierico senza prepararli, poi ottiene resistenze e ali.'],
+['Shugenja','Shugenja','Perfetto Sacerdote','base',6,'p','Vol',2,'','Incantatore divino spontaneo legato a un elemento preferito.'],
+['Sciamano degli spiriti','Spirit Shaman','Perfetto Sacerdote','base',8,'m','Rifl, Vol',4,'','Incantatore divino che richiama ogni giorno incantesimi dal mondo degli spiriti, con una guida spirituale e poteri contro gli spiriti.'],
+// Perfetto Avventuriero
+['Ninja','Ninja','Perfetto Avventuriero','base',6,'m','Rifl',6,'','Furtivo e mistico: punti ki, invisibilità, passo nell\'aria, attacco furtivo e la capacità di diventare inconsistente.'],
+['Esploratore','Scout','Perfetto Avventuriero','base',8,'m','Rifl',8,'','Combatte in movimento: schermaglia (danni extra se si sposta), molta velocità e talenti bonus.'],
+['Ladro di incantesimi','Spellthief','Perfetto Avventuriero','base',6,'m','Vol',6,'','Ruba incantesimi e capacità magiche col suo attacco furtivo e lancia pochi incantesimi arcani.'],
+// Perfetto Psionico
+['Ardente','Ardent','Perfetto Psionico','base',6,'m','Vol',2,'','Psionico guidato dalla fede in un concetto: sceglie due mantelli di poteri.'],
+['Mente divina','Divine Mind','Perfetto Psionico','base',10,'m','Vol',2,'','Guerriero psionico devoto che proietta aure benefiche sugli alleati.'],
+['Lurk','Lurk','Perfetto Psionico','base',6,'m','Rifl',4,'','Assassino psionico che potenzia i colpi a sorpresa con poteri e aumenti.'],
+['Erudito','Erudite','Perfetto Psionico','base',4,'p','Vol',2,'','Variante del psion che impara poteri da qualsiasi disciplina copiandoli.'],
+// Manuale delle Miniature
+['Guaritore','Healer','Manuale delle Miniature','base',8,'m','Vol',4,'','Incantatore divino dedicato alla guarigione, con un compagno unicorno.'],
+['Maresciallo','Marshal','Manuale delle Miniature','base',8,'m','Temp, Vol',4,'','Comandante che guida gli alleati con aure minori e maggiori e concede azioni extra.'],
+// Tomo della Battaglia
+['Crociato','Crusader','Tomo della Battaglia: Il Libro delle Nove Spade','base',10,'a','Temp',4,'','Guerriero sacro delle manovre: le recupera a caso durante lo scontro e trasforma il dolore in forza.'],
+['Maestro della spada','Swordsage','Tomo della Battaglia: Il Libro delle Nove Spade','base',8,'m','Rifl, Vol',6,'','Esperto di molte scuole marziali: tante manovre, aggiunge la Saggezza alla CA in armatura leggera.'],
+['Lama da guerra','Warblade','Tomo della Battaglia: Il Libro delle Nove Spade','base',12,'a','Temp',4,'','Combattente delle manovre più diretto: aggiunge l\'Intelligenza a Riflessi e ai colpi contro i nemici più deboli.'],
+// Tomo della Magia
+['Vincolatore','Binder','Tomo della Magia','base',8,'m','Vol',2,'','Stringe patti con vestigia, spiriti caduti, e ne ottiene i poteri per un giorno.'],
+['Incantatore d\'ombra','Shadowcaster','Tomo della Magia','base',4,'p','Vol',2,'','Manipola la trama d\'ombra con misteri che diventano capacità innate.'],
+['Pronunciatore del vero nome','Truenamer','Tomo della Magia','base',6,'p','Vol',4,'','Cambia la realtà pronunciando i veri nomi: ogni uso è una prova di abilità sempre più difficile.'],
+// Magia dell'Incarnum
+['Incarnato','Incarnate','Magia dell\'Incarnum','base',6,'m','Temp, Vol',4,'','Plasma l\'energia delle anime in soulmeld da legare ai chakra.'],
+['Nato dalle anime','Soulborn','Magia dell\'Incarnum','base',10,'a','Temp, Vol',2,'','Guerriero sacro che usa l\'incarnum per punire gli avversari di allineamento opposto.'],
+['Totemista','Totemist','Magia dell\'Incarnum','base',8,'m','Temp, Rifl',4,'','Lega soulmeld ispirati alle bestie magiche e combatte come una di esse.'],
+// Altri
+['Artefice','Artificer','Ambientazione di Eberron','base',6,'m','Vol',4,'','Inventore magico: infonde oggetti con infusioni, crea oggetti magici con riserva di PE e lavora sui forgiati.'],
+['Archivista','Archivist','Eroi dell\'Orrore','base',6,'p','Vol',4,'','Incantatore divino che prepara incantesimi da un libro di preghiere e studia i punti deboli dei mostri.'],
+['Necromante del terrore','Dread Necromancer','Eroi dell\'Orrore','base',6,'p','Vol',2,'','Incantatore arcano spontaneo di necromanzia: tocco del freddo, comandare non morti e infine diventa un lich.'],
+['Adepto del fuoco del drago','Dragonfire Adept','Magia dei Draghi','base',8,'m','Temp, Vol',2,'','Respira come un drago: soffio a volontà con forme e aggiunte, più invocazioni draconiche.'],
+['Factotum','Factotum','Dungeonscape','base',8,'m','—',6,'','Il tuttofare: punti ispirazione per aggiungere bonus alle prove, lanciare pochi incantesimi arcani e copiare capacità di classe.'],
+['Sohei','Sohei','Avventure Orientali (3.0)','base',10,'a','Temp, Vol',2,'','Monaco guerriero: combatte con armi e armature e scatena una furia di battaglia.'],
+['Sciamano','Shaman','Avventure Orientali (3.0)','base',8,'m','—',4,'','Sacerdote orientale dei kami con colpo senz\'armi e un compagno spirito.'],
+['Mistico','Mystic','Ambientazione di Dragonlance','base',6,'p','Vol',2,'','Incantatore divino spontaneo della magia del cuore.'],
+['Nobile','Noble','Ambientazione di Dragonlance','base',8,'m','Vol',4,'','Leader e diplomatico che ispira e favorisce gli alleati.'],
+['Marinaio','Mariner','Ambientazione di Dragonlance','base',10,'a','Temp, Rifl',4,'','Uomo di mare esperto di navi, sartiame e combattimento a bordo.'],
+];
+// [nome, nome originale, manuale, taglia e tipo, aggiustamenti, MEL, classe preferita, sintesi]
+const RZ35X = [
+['Drow','Drow (elfo scuro)',CP_SRD,'Medio, umanoide (elfo)','+2 Des, -2 Cos, +2 Int, +2 Car','+2','Mago (le donne: chierico)','Scurovisione 36 m, resistenza agli incantesimi 11 + livello, luci danzanti, oscurità e luminescenza 1/giorno; accecati dalla luce intensa.'],
+['Duergar','Duergar (nano grigio)',CP_SRD,'Medio, umanoide (nano)','+2 Cos, -4 Car','+1','Guerriero','Scurovisione 36 m, ingrandire persone e invisibilità 1/giorno, immuni a paralisi, fantasmi e veleni; sensibili alla luce.'],
+['Svirfneblin','Svirfneblin (gnomo delle profondità)',CP_SRD,'Piccolo, umanoide (gnomo)','-2 For, +2 Des, +2 Sag, -4 Car','+3','Illusionista','Resistenza agli incantesimi 11 + livello, +4 di schivare alla CA, scurovisione 36 m, sempre protetti dalla divinazione (anti-individuazione); cecità/sordità, sfocatura e camuffare se stesso 1/giorno.'],
+['Elfo grigio','Gray Elf',CP_SRD,'Medio, umanoide (elfo)','-2 For, +2 Des, -2 Cos, +2 Int','—','Mago','Elfi alti e distaccati, i più dotati per la magia arcana.'],
+['Elfo silvano','Wood Elf',CP_SRD,'Medio, umanoide (elfo)','+2 For, +2 Des, -2 Cos, -2 Int','—','Ranger','Elfi dei boschi più selvatici, forti e diffidenti.'],
+['Elfo selvaggio','Wild Elf',CP_SRD,'Medio, umanoide (elfo)','+2 Des, -2 Int','—','Stregone','Elfi tribali delle foreste profonde.'],
+['Elfo acquatico','Aquatic Elf',CP_SRD,'Medio, umanoide (elfo, acquatico)','+2 Des, -2 Int','—','Guerriero','Respirano sott\'acqua, hanno branchie e una velocità di nuoto.'],
+['Aasimar','Aasimar',CP_SRD,'Medio, esterno (nativo)','+2 Sag, +2 Car','+1','Paladino','Discendenti di celestiali: scurovisione, luce 1/giorno, resistenze ad acido, freddo ed elettricità.'],
+['Tiefling','Tiefling',CP_SRD,'Medio, esterno (nativo)','+2 Des, +2 Int, -2 Car','+1','Ladro','Discendenti di immondi: scurovisione, oscurità 1/giorno, resistenze a freddo, elettricità e fuoco.'],
+['Dromite','Dromite',CP_PSI,'Piccolo, mostruoso umanoide','+2 Car, -2 For, -2 Sag','—','Selvaggio','Insettoidi coloniali con antenne, occhi composti e una scarica psionica di energia scelta alla nascita.'],
+['Elan','Elan',CP_PSI,'Medio, aberrazione','-2 Car','—','Psion','Umani trasformati da una cabala psionica: non invecchiano e usano punti potere per resistere ai danni.'],
+['Mezzogigante','Half-Giant',CP_PSI,'Medio, gigante','+2 For, +2 Cos, -2 Des','—','Guerriero psichico','Grandi e forti, contano come più grandi per lottare e armi, acclimatati al fuoco.'],
+['Maenad','Maenad',CP_PSI,'Medio, umanoide (maenad)','nessuno','—','Selvaggio','Calmi in superficie ma pieni di furia repressa che possono liberare come un urlo sonico.'],
+['Xeph','Xeph',CP_PSI,'Medio, umanoide (xeph)','+2 Des, -2 For','—','Lama dell\'anima','Agili e rapidi, possono scattare con un\'accelerazione psionica.'],
+['Goblin','Goblin',CP_SRD,'Piccolo, umanoide (goblinoide)','-2 For, +2 Des, -2 Car','—','Ladro','Piccoli e furtivi: scurovisione, +4 a Muoversi Silenziosamente e Cavalcare.'],
+['Hobgoblin','Hobgoblin',CP_SRD,'Medio, umanoide (goblinoide)','+2 Des, +2 Cos','+1','Guerriero','Goblinoidi disciplinati e militari: scurovisione e +4 a Muoversi Silenziosamente.'],
+['Coboldo','Kobold',CP_SRD,'Piccolo, umanoide (rettile)','-4 For, +2 Des, -2 Cos','—','Stregone','Rettili scaltri: scurovisione, armatura naturale +1, sensibili alla luce, bravi con le trappole.'],
+['Orco','Orc',CP_SRD,'Medio, umanoide (orco)','+4 For, -2 Int, -2 Sag, -2 Car','—','Barbaro','Forti e brutali: scurovisione, sensibili alla luce.'],
+['Gnoll','Gnoll',CP_SRD,'Medio, umanoide (gnoll)','+4 For, +2 Cos, -2 Int, -2 Car','+1','Ranger','Iene umanoidi: 2 DV da umanoide, armatura naturale +1, scurovisione.'],
+['Lucertoloide','Lizardfolk',CP_SRD,'Medio, umanoide (rettile)','+2 For, +2 Cos, -2 Int','+1','Druido','2 DV da umanoide, armatura naturale +5, trattengono il respiro, artigli e morso.'],
+['Bugbear','Bugbear',CP_SRD,'Medio, umanoide (goblinoide)','+4 For, +2 Des, +2 Cos, -2 Car','+1','Ladro','I goblinoidi più grossi: 3 DV da umanoide, armatura naturale +3, furtivi.'],
+['Githyanki','Githyanki',CP_SRD,'Medio, umanoide (extraplanare)','+2 Des, +2 Cos, -2 Sag','+2','Guerriero','Guerrieri del Piano Astrale con poteri psionici e resistenza agli incantesimi.'],
+['Githzerai','Githzerai',CP_SRD,'Medio, umanoide (extraplanare)','+6 Des, +2 Sag, -2 Int','+2','Monaco','Asceti del Limbo con poteri psionici, CA bonus di Saggezza e resistenza agli incantesimi.'],
+// Fuori dall'SRD
+['Goliath','Goliath','Razze della Pietra','Medio, umanoide (goliath)','+4 For, -2 Des, +2 Cos','+1','Barbaro','Montanari enormi e competitivi: corporatura possente (usano armi più grandi), arrampicatori e saltatori, acclimatati all\'altitudine.'],
+['Illumian','Illumian','Razze del Destino','Medio, umanoide (illumian)','nessuno','—','Qualsiasi','Umani legati a rune luminose che fluttuano attorno alla testa e danno poteri diversi.'],
+['Raptoran','Raptoran','Razze della Natura','Medio, umanoide (raptoran)','nessuno','—','Ranger','Popolo alato degli alberi: plana dall\'inizio, vola davvero dal 5º livello del personaggio.'],
+['Dragonide','Dragonborn','Razze del Drago','Medio, umanoide (dragonide)','+2 Cos, -2 Des','—','Come la razza d\'origine','Creature di qualsiasi razza rinate dalla fede in Bahamut: soffio o ali, sensi da drago.'],
+['Scagliaincantata','Spellscale','Razze del Drago','Medio, mostruoso umanoide','vedi manuale','vedi manuale','Stregone','Esseri scintillanti e volubili, toccati dalla magia draconica.'],
+['Cangiante','Changeling','Ambientazione di Eberron','Medio, umanoide (mutaforma)','nessuno','—','Ladro','Cambiano aspetto a volontà come un piccolo camuffamento; esperti di inganni.'],
+['Kalashtar','Kalashtar','Ambientazione di Eberron','Medio, umanoide (umano)','nessuno','—','Guerriero psichico','Umani uniti a spiriti di Dal Quor: resistenza alla mente, poteri psionici minori, sogni protetti.'],
+['Mutante','Shifter','Ambientazione di Eberron','Medio, umanoide (mutaforma)','+2 Des, -2 Int, -2 Car','—','Ranger','Discendenti dei licantropi: si trasformano per un breve periodo ottenendo un tratto bestiale.'],
+['Forgiato','Warforged','Ambientazione di Eberron','Medio, costrutto vivente','+2 Cos, -2 Sag, -2 Car','—','Guerriero','Soldati costruiti: armatura integrata, immuni a veleno, sonno e malattie, non mangiano né dormono.'],
+['Genasi dell\'aria','Air Genasi','Ambientazione di Forgotten Realms','Medio, esterno (nativo)','+2 Des, +2 Int, -2 Sag, -2 Car','+1','Guerriero','Discendenti di creature dell\'aria: levitazione 1/giorno, non hanno bisogno di respirare.'],
+['Genasi della terra','Earth Genasi','Ambientazione di Forgotten Realms','Medio, esterno (nativo)','+2 For, +2 Cos, -2 Sag, -2 Car','+1','Guerriero','Discendenti di creature della terra: passare senza tracce 1/giorno, saldi come roccia.'],
+['Genasi del fuoco','Fire Genasi','Ambientazione di Forgotten Realms','Medio, esterno (nativo)','+2 Int, -2 Car','+1','Guerriero','Discendenti di creature del fuoco: controllare fiamme 1/giorno, resistenti al fuoco.'],
+['Genasi dell\'acqua','Water Genasi','Ambientazione di Forgotten Realms','Medio, esterno (nativo)','+2 Cos, -2 Car','+1','Guerriero','Discendenti di creature dell\'acqua: respirano sott\'acqua e nuotano bene.'],
+['Kender','Kender','Ambientazione di Dragonlance','Piccolo, umanoide (kender)','-2 For, +2 Des','—','Ladro','Piccoli, curiosi e senza paura: sbeffeggiano i nemici e si ritrovano in tasca oggetti altrui.'],
+['Minotauro di Krynn','Minotaur (Krynn)','Ambientazione di Dragonlance','Medio, mostruoso umanoide','vedi manuale','vedi manuale','Guerriero','Marinai e guerrieri orgogliosi, con corna e senso dell\'orientamento.'],
+['Azurin','Azurin','Magia dell\'Incarnum','Medio, umanoide (azurin)','vedi manuale','vedi manuale','Incarnato','Discendenti di umani e duskling legati all\'incarnum, con un chakra bonus.'],
+['Duskling','Duskling','Magia dell\'Incarnum','Piccolo, folletto','vedi manuale','vedi manuale','Totemista','Folletti crepuscolari affini all\'incarnum.'],
+['Rilkan','Rilkan','Magia dell\'Incarnum','Piccolo, umanoide (rilkan)','vedi manuale','vedi manuale','Ladro','Ottimisti e imprevedibili, sfruttano la fortuna.'],
+['Skarn','Skarn','Magia dell\'Incarnum','Medio, umanoide (skarn)','vedi manuale','vedi manuale','Nato dalle anime','Guerrieri con aculei sulle braccia, creati dall\'incarnum.'],
+['Darfellan','Darfellan','Stormwrack','Medio, umanoide (darfellan)','vedi manuale','vedi manuale','Barbaro','Popolo marino simile alle orche, nemici giurati dei sahuagin.'],
+['Asherati','Asherati','Sandstorm','Medio, umanoide (asherati)','vedi manuale','vedi manuale','Ladro','Popolo del deserto che nuota nella sabbia e brilla debolmente.'],
+['Bariaur','Bariaur','Manuale dei Piani','Medio, esterno (nativo)','vedi manuale','vedi manuale','Ranger','Metà capra e metà umani, viaggiatori dei piani.'],
+];
+// --- vista
+S.cpq = ''; S.cpm = ''; S.cpt = ''; S.cpOpen = new Set();
+document.addEventListener('toggle', e => { const k = e.target.dataset && e.target.dataset.cpk; if (k) e.target.open ? S.cpOpen.add(k) : S.cpOpen.delete(k); }, true);
+const CPBAB = {a: 'alta (come il guerriero)', m: 'media (come il chierico)', p: 'bassa (come il mago)'};
+const CPTS = {f: 'Temp', r: 'Rifl', v: 'Vol', fr: 'Temp, Rifl', fv: 'Temp, Vol', rv: 'Rifl, Vol', frv: 'Temp, Rifl, Vol'};
+const cpTs = t => CPTS[t] || [...String(t)].map(c => ({f:'Temp', r:'Rifl', v:'Vol'})[c]).filter(Boolean).join(', ');
+const CARX = {for:'For', des:'Des', cos:'Cos', int:'Int', sag:'Sag', car:'Car'};
+function cpFiltri(kind, list){
+  const man = [...new Set(list.map(x => x.m))];
+  return `<div class="grid4"><div><label for="cp-q">Cerca</label><input id="cp-q" data-cp="cpq" value="${esc(S.cpq)}" placeholder="Nome italiano o inglese"></div>
+  <div><label for="cp-m">Manuale</label><select id="cp-m" data-cp="cpm"><option value="">Tutti</option>${man.map(m => `<option ${S.cpm===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
+  ${kind === 'classi' ? `<div><label for="cp-t">Tipo</label><select id="cp-t" data-cp="cpt"><option value="">Tutte</option>${[['base','Classi base'],['prestigio','Classi di prestigio'],['PNG','Classi da PNG']].map(([v,l]) => `<option value="${v}" ${S.cpt===v?'selected':''}>${l}</option>`).join('')}</select></div>` : ''}</div>`;
+}
+const cpMatch = x => (!S.cpq || (x.nome + ' ' + x.en).toLowerCase().includes(S.cpq.trim().toLowerCase())) && (!S.cpm || x.m === S.cpm) && (!S.cpt || x.t === S.cpt);
+const cpRow = (k, v) => v ? `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>` : '';
+function cpClassi(){
+  const core = Object.entries(PGD.classi).map(([n, c]) => ({nome: n, en: '', m: CP_SRD + ' · Manuale del Giocatore', t: 'base', c}));
+  const all = [...core, ...CL35X.map(([nome, en, m, t, dv, bab, ts, pa, req, sin]) => ({nome, en, m, t, dv, bab, ts, pa, req, sin}))];
+  const list = all.filter(cpMatch);
+  const body = x => {
+    if (x.c) { const c = x.c;
+      return `<table class="sb"><tbody>${cpRow('Dado vita', 'd' + c.dv)}${cpRow('Bonus di attacco base', CPBAB[c.bab])}${cpRow('Tiri salvezza buoni', cpTs(c.ts))}${cpRow('Punti abilità per livello', c.pa + ' + mod. Int (×4 al 1º livello)')}${cpRow('Armi', c.armiTxt)}${cpRow('Abilità di classe', c.cs.join(', '))}${c.cast ? cpRow('Incantesimi', (c.cast.arc ? 'Arcani' : 'Divini') + ', caratteristica: ' + (CARX[c.cast.car] || c.cast.car)) : ''}</tbody></table>
+      <h4>Capacità per livello</h4>${c.f.map(([l, n, d]) => `<p><b>${l}º · ${esc(n)}.</b> ${esc(d)}</p>`).join('')}`; }
+    return `<table class="sb"><tbody>${cpRow('Dado vita', x.dv ? 'd' + x.dv : '')}${cpRow('Bonus di attacco base', CPBAB[x.bab])}${cpRow('Tiri salvezza buoni', x.ts)}${cpRow('Punti abilità per livello', x.pa ? x.pa + ' + mod. Int' : '')}${cpRow('Requisiti', x.req)}</tbody></table><p>${esc(x.sin)}</p>${x.m.startsWith('SRD') ? '' : '<p class="muted" style="font-size:14px">Sintesi scritta per la Sala d\'Armi: per le capacità complete serve il manuale.</p>'}`;
+  };
+  return `<div class="card"><h2>Classi</h2><p class="muted">${all.length} classi: quelle del <i>Manuale del Giocatore</i> con tutte le capacità, le classi di prestigio, psioniche e da PNG dell'SRD 3.5, e le classi base degli altri manuali con i dati principali e una breve sintesi. Tocca una classe per aprirla.</p>${cpFiltri('classi', all)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
+  <div class="card">${list.map(x => `<details class="pgf" data-cpk="${esc(x.nome)}" ${S.cpOpen.has(x.nome) ? 'open' : ''}><summary>${esc(x.nome)}${x.en && x.en !== x.nome ? ` <span class="muted">· ${esc(x.en)}</span>` : ''} <span class="tag">${esc(x.t === 'base' ? 'base' : x.t === 'PNG' ? 'PNG' : 'prestigio')}</span> <span class="muted" style="font-weight:400;font-size:14px">${esc(x.m)}</span></summary>${body(x)}</details>`).join('') || '<p class="empty">Nessuna classe trovata.</p>'}
+  <p class="cred">Le regole dell'SRD 3.5 sono Open Game Content (Open Game License 1.0a, Wizards of the Coast). Gli altri manuali sono citati solo per nome, dati di base e una sintesi.</p></div>`;
+}
+function cpRazze(){
+  const agg = b => Object.entries(b || {}).map(([k, v]) => (v > 0 ? '+' : '') + v + ' ' + (CARX[k] || k)).join(', ') || '—';
+  const TG = {M: 'Media', P: 'Piccola'};
+  const core = Object.entries(PGD.specie).map(([n, r]) => ({nome: n, en: '', m: CP_SRD + ' · Manuale del Giocatore', r}));
+  const all = [...core, ...RZ35X.map(([nome, en, m, tipo, agg, mel, cp, sin]) => ({nome, en, m, tipo, agg, mel, cp, sin}))];
+  const list = all.filter(cpMatch);
+  const body = x => x.r ? `<table class="sb"><tbody>${cpRow('Taglia', TG[x.r.taglia] || x.r.taglia)}${cpRow('Velocità', x.r.vel + ' m')}${cpRow('Caratteristiche', agg(x.r.bonus))}</tbody></table>${x.r.t.map(([n, d]) => `<p><b>${esc(n)}.</b> ${esc(d)}</p>`).join('')}`
+    : `<table class="sb"><tbody>${cpRow('Taglia e tipo', x.tipo)}${cpRow('Caratteristiche', x.agg)}${cpRow('Modificatore di livello', x.mel)}${cpRow('Classe preferita', x.cp)}</tbody></table><p>${esc(x.sin)}</p>${x.m.startsWith('SRD') ? '' : '<p class="muted" style="font-size:14px">Sintesi scritta per la Sala d\'Armi: per i tratti completi serve il manuale.</p>'}`;
+  return `<div class="card"><h2>Razze</h2><p class="muted">${all.length} razze: quelle del <i>Manuale del Giocatore</i> con tutti i tratti, le sottorazze, le razze psioniche e mostruose giocabili dell'SRD 3.5, e le razze degli altri manuali con i dati principali e una breve sintesi. Tocca una razza per aprirla.</p>${cpFiltri('razze', all)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
+  <div class="card">${list.map(x => `<details class="pgf" data-cpk="${esc(x.nome)}" ${S.cpOpen.has(x.nome) ? 'open' : ''}><summary>${esc(x.nome)}${x.en && x.en !== x.nome ? ` <span class="muted">· ${esc(x.en)}</span>` : ''} <span class="muted" style="font-weight:400;font-size:14px">${esc(x.m)}</span></summary>${body(x)}</details>`).join('') || '<p class="empty">Nessuna razza trovata.</p>'}
+  <p class="cred">Le regole dell'SRD 3.5 sono Open Game Content (Open Game License 1.0a, Wizards of the Coast). Gli altri manuali sono citati solo per nome, dati di base e una sintesi.</p></div>`;
+}
+document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.cp; if (!k) return; S[k] = e.target.value; clearTimeout(S.cpt0); S.cpt0 = setTimeout(() => { const id = e.target.id, pos = e.target.selectionStart; render(); const n = document.getElementById(id); if (n) { n.focus(); if (n.setSelectionRange && pos != null) try { n.setSelectionRange(pos, pos); } catch(_) {} } }, 250); });
+
 function savedView(){
   const ents = Object.entries(S.saved).sort((a,b)=>(b[1].creato||0)-(a[1].creato||0));
   return `<div class="card"><h2>Incontri salvati</h2><p class="muted">La difficoltà si ricalcola sul livello attuale del gruppo.</p></div>` + (ents.length ? ents.map(([id,e])=>{
@@ -1312,11 +1492,11 @@ document.addEventListener('change', e => {
 });
 function route(){
   const h = location.hash.slice(1), m = /^m-(\d+)$/.exec(h), pm = /^pg-(.+)$/.exec(h);
-  document.body.classList.toggle('wide', h === 'pg' || !!pm);
+  document.body.classList.toggle('wide', h === 'pg' || !!pm || h === 'razze' || h === 'classi');
   if (pm) { S.view = 'pgscheda'; S.pgId = decodeURIComponent(pm[1]); render(); window.scrollTo(0,0); return; }
   if (h === 'nuovo-mostro') { S.view = 'mxnew'; render(); window.scrollTo(0,0); return; }
   if (m && B[Number(m[1])]) { S.view = 'mostro'; S.mid = Number(m[1]); loadImg(S.mid); render(); window.scrollTo(0,0); return; }
-  S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg'].includes(h) ? h : 'gruppo'; render();
+  S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg','razze','classi'].includes(h) ? h : 'gruppo'; render();
 }
 window.addEventListener('hashchange', route);
 async function sha(s){ const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2,'0')).join(''); }
