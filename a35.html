@@ -148,7 +148,7 @@ table.pgsk3 input{text-align:center}.pgbook{display:flex;flex-wrap:wrap;gap:6px;
 <body>
 <header>
   <h1>Sala d'Armi 3.5</h1>
-  <nav id="nav"><a href="#gruppo" data-v="gruppo">Gruppo</a><a href="#generatore" data-v="generatore">Generatore</a><a href="#bestiario" data-v="bestiario">Bestiario</a><a href="#razze" data-v="razze">Razze</a><a href="#classi" data-v="classi">Classi</a><a href="#incontri" data-v="incontri">Incontri salvati</a><a href="#pg" data-v="pg">Schede personaggi</a></nav>
+  <nav id="nav"><a href="#gruppo" data-v="gruppo">Gruppo</a><a href="#generatore" data-v="generatore">Generatore</a><a href="#bestiario" data-v="bestiario">Bestiario</a><a href="#razze" data-v="razze">Razze</a><a href="#classi" data-v="classi">Classi</a><a href="#prestigio" data-v="prestigio">Classi di prestigio</a><a href="#incontri" data-v="incontri">Incontri salvati</a><a href="#pg" data-v="pg">Schede personaggi</a></nav>
   <div class="pl" id="pl"></div><button class="sm mbtn" id="mbtn" data-act="menu">← Menu</button>
 </header>
 <main><div id="work"></div><aside class="side" id="side"></aside></main>
@@ -350,7 +350,7 @@ function render(){
   $('#mbtn').classList.toggle('on', S.master);
   const keep = {}, act = document.activeElement && document.activeElement.id;
   for (const el of document.querySelectorAll('#work input[id]:not([type=file]), #work textarea[id]')) keep[el.id] = [el.value, el.selectionStart];
-  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='razze' ? cpRazze() : S.view==='classi' ? cpClassi() : S.view==='mxnew' ? (ED() ? mxForm() : bestView()) : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
+  $('#work').innerHTML = S.view==='generatore' ? genView() : S.view==='bestiario' ? bestView() : S.view==='incontri' ? savedView() : S.view==='mostro' ? monsterView() : S.view==='immagini' ? bulkView() : S.view==='razze' ? cpRazze() : S.view==='classi' ? cpClassi(false) : S.view==='prestigio' ? cpClassi(true) : S.view==='mxnew' ? (ED() ? mxForm() : bestView()) : S.view==='pg' ? pgListView() : S.view==='pgscheda' ? pgSheetView() : groupView();
   for (const [id,[v,p]] of Object.entries(keep)) { const el = document.getElementById(id); if (el && el.type!=='number') { el.value = v; } }
   if (act) { const el = document.getElementById(act); if (el) { el.focus(); try { if (keep[act]) el.setSelectionRange(keep[act][1], keep[act][1]); } catch(_){} } }
   $('#side').innerHTML = sideView();
@@ -1373,21 +1373,21 @@ function cpFiltri(kind, list){
   const man = [...new Set(list.map(x => x.m))];
   return `<div class="grid4"><div><label for="cp-q">Cerca</label><input id="cp-q" data-cp="cpq" value="${esc(S.cpq)}" placeholder="Nome italiano o inglese"></div>
   <div><label for="cp-m">Manuale</label><select id="cp-m" data-cp="cpm"><option value="">Tutti</option>${man.map(m => `<option ${S.cpm===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
-  ${kind === 'classi' ? `<div><label for="cp-t">Tipo</label><select id="cp-t" data-cp="cpt"><option value="">Tutte</option>${[['base','Classi base'],['prestigio','Classi di prestigio'],['PNG','Classi da PNG']].map(([v,l]) => `<option value="${v}" ${S.cpt===v?'selected':''}>${l}</option>`).join('')}</select></div>` : ''}</div>`;
+  ${kind === 'classi' ? `<div><label for="cp-t">Tipo</label><select id="cp-t" data-cp="cpt"><option value="">Tutte</option>${[['base','Classi base'],['PNG','Classi da PNG']].map(([v,l]) => `<option value="${v}" ${S.cpt===v?'selected':''}>${l}</option>`).join('')}</select></div>` : ''}</div>`;
 }
-const cpMatch = x => (!S.cpq || (x.nome + ' ' + x.en).toLowerCase().includes(S.cpq.trim().toLowerCase())) && (!S.cpm || x.m === S.cpm) && (!S.cpt || x.t === S.cpt);
+const cpMatch = x => (!S.cpq || (x.nome + ' ' + x.en).toLowerCase().includes(S.cpq.trim().toLowerCase())) && (!S.cpm || x.m === S.cpm) && (!S.cpt || !x.t || x.t === 'prestigio' || x.t === S.cpt);
 const cpRow = (k, v) => v ? `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>` : '';
-function cpClassi(){
+function cpClassi(pre){
   const core = Object.entries(PGD.classi).map(([n, c]) => ({nome: n, en: '', m: CP_SRD + ' · Manuale del Giocatore', t: 'base', c}));
   const all = [...core, ...CL35X.map(([nome, en, m, t, dv, bab, ts, pa, req, sin]) => ({nome, en, m, t, dv, bab, ts, pa, req, sin}))];
-  const list = all.filter(cpMatch);
+  const tutte = all.filter(x => pre ? x.t === 'prestigio' : x.t !== 'prestigio'), list = tutte.filter(cpMatch);
   const body = x => {
     if (x.c) { const c = x.c;
       return `<table class="sb"><tbody>${cpRow('Dado vita', 'd' + c.dv)}${cpRow('Bonus di attacco base', CPBAB[c.bab])}${cpRow('Tiri salvezza buoni', cpTs(c.ts))}${cpRow('Punti abilità per livello', c.pa + ' + mod. Int (×4 al 1º livello)')}${cpRow('Armi', c.armiTxt)}${cpRow('Abilità di classe', c.cs.join(', '))}${c.cast ? cpRow('Incantesimi', (c.cast.arc ? 'Arcani' : 'Divini') + ', caratteristica: ' + (CARX[c.cast.car] || c.cast.car)) : ''}</tbody></table>
       <h4>Capacità per livello</h4>${c.f.map(([l, n, d]) => `<p><b>${l}º · ${esc(n)}.</b> ${esc(d)}</p>`).join('')}`; }
     return `<table class="sb"><tbody>${cpRow('Dado vita', x.dv ? 'd' + x.dv : '')}${cpRow('Bonus di attacco base', CPBAB[x.bab])}${cpRow('Tiri salvezza buoni', x.ts)}${cpRow('Punti abilità per livello', x.pa ? x.pa + ' + mod. Int' : '')}${cpRow('Requisiti', x.req)}</tbody></table><p>${esc(x.sin)}</p>${x.m.startsWith('SRD') ? '' : '<p class="muted" style="font-size:14px">Sintesi scritta per la Sala d\'Armi: per le capacità complete serve il manuale.</p>'}`;
   };
-  return `<div class="card"><h2>Classi</h2><p class="muted">${all.length} classi: quelle del <i>Manuale del Giocatore</i> con tutte le capacità, le classi di prestigio, psioniche e da PNG dell'SRD 3.5, e le classi base degli altri manuali con i dati principali e una breve sintesi. Tocca una classe per aprirla.</p>${cpFiltri('classi', all)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
+  return `<div class="card"><h2>${pre ? 'Classi di prestigio' : 'Classi'}</h2><p class="muted">${pre ? `${tutte.length} classi di prestigio dell'SRD 3.5 (Guida del Dungeon Master e psioniche), con requisiti, dati principali e una sintesi. Tocca una classe per aprirla.` : `${tutte.length} classi: quelle del <i>Manuale del Giocatore</i> con tutte le capacità, le classi psioniche e da PNG dell'SRD 3.5, e le classi base degli altri manuali con i dati principali e una breve sintesi. Le classi di prestigio sono nella loro pagina. Tocca una classe per aprirla.`}</p>${cpFiltri(pre ? 'prestigio' : 'classi', tutte)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
   <div class="card">${list.map(x => `<details class="pgf" data-cpk="${esc(x.nome)}" ${S.cpOpen.has(x.nome) ? 'open' : ''}><summary>${esc(x.nome)}${x.en && x.en !== x.nome ? ` <span class="muted">· ${esc(x.en)}</span>` : ''} <span class="tag">${esc(x.t === 'base' ? 'base' : x.t === 'PNG' ? 'PNG' : 'prestigio')}</span> <span class="muted" style="font-weight:400;font-size:14px">${esc(x.m)}</span></summary>${body(x)}</details>`).join('') || '<p class="empty">Nessuna classe trovata.</p>'}
   <p class="cred">Le regole dell'SRD 3.5 sono Open Game Content (Open Game License 1.0a, Wizards of the Coast). Gli altri manuali sono citati solo per nome, dati di base e una sintesi.</p></div>`;
 }
@@ -1492,11 +1492,11 @@ document.addEventListener('change', e => {
 });
 function route(){
   const h = location.hash.slice(1), m = /^m-(\d+)$/.exec(h), pm = /^pg-(.+)$/.exec(h);
-  document.body.classList.toggle('wide', h === 'pg' || !!pm || h === 'razze' || h === 'classi');
+  document.body.classList.toggle('wide', h === 'pg' || !!pm || h === 'razze' || h === 'classi' || h === 'prestigio');
   if (pm) { S.view = 'pgscheda'; S.pgId = decodeURIComponent(pm[1]); render(); window.scrollTo(0,0); return; }
   if (h === 'nuovo-mostro') { S.view = 'mxnew'; render(); window.scrollTo(0,0); return; }
   if (m && B[Number(m[1])]) { S.view = 'mostro'; S.mid = Number(m[1]); loadImg(S.mid); render(); window.scrollTo(0,0); return; }
-  S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg','razze','classi'].includes(h) ? h : 'gruppo'; render();
+  S.view = ['gruppo','generatore','bestiario','incontri','immagini','pg','razze','classi','prestigio'].includes(h) ? h : 'gruppo'; render();
 }
 window.addEventListener('hashchange', route);
 async function sha(s){ const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(d)].map(x => x.toString(16).padStart(2,'0')).join(''); }
