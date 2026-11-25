@@ -1240,6 +1240,7 @@ const CL35X = [
 ['Esperto','Expert',CP_SRD,'PNG',6,'m','Vol',6,'','Classe da PNG: artigiani, sapienti e professionisti; sceglie liberamente 10 abilità di classe.'],
 ['Combattente','Warrior',CP_SRD,'PNG',8,'a','Temp',2,'','Classe da PNG: soldati e guardie, competente in armi e armature.'],
 ['Arciere arcano','Arcane Archer',CP_SRD,'prestigio',8,'a','Temp, Rifl',4,'Elfo o mezzelfo; BAB +6; Arma Focalizzata (arco lungo o corto), Tiro Ravvicinato, Tiro Preciso; incantesimi arcani di 1º livello.','Infonde magia nelle frecce: frecce incantate, imbevute di incantesimi, cercatrici, che attraversano i piani, a raffica e infine la freccia della morte.'],
+['Arcimago','Archmage',CP_SRD,'prestigio',4,'p','Vol',2,'Conoscenze (arcane) 15, Sapienza Magica 15; Abilità Focalizzata (Sapienza Magica) e Incantesimi Focalizzati in due scuole; incantesimi arcani di 7º livello e di 5º livello di almeno cinque scuole.','Rinuncia a slot di incantesimi alti per ottenere le alte arti: potere degli incantesimi, maestria degli elementi, fuoco arcano, portata arcana, capacità magiche e maestria nel controincantesimo.'],
 ['Mistificatore arcano','Arcane Trickster',CP_SRD,'prestigio',4,'p','Rifl, Vol',4,'Non legale; Decifrare Scritture 7, Disattivare Congegni 7, Raggirare 7, Scassinare 7; incantesimi arcani di 3º livello (con mano magica); attacco furtivo +2d6.','Unisce ladro e mago: continua ad avanzare negli incantesimi e aggiunge attacco furtivo a distanza e furti con la telecinesi.'],
 ['Assassino','Assassin',CP_SRD,'prestigio',6,'m','Rifl',4,'Malvagio; Muoversi Silenziosamente 8, Nascondersi 8, Travestimento 4; uccidere qualcuno per entrare.','Studia il bersaglio per un colpo mortale, ha attacco furtivo, uso dei veleni e pochi incantesimi arcani basati sull\'Intelligenza.'],
 ['Guardia nera','Blackguard',CP_SRD,'prestigio',10,'a','Temp',2,'Malvagio; BAB +6; Conoscenze (religioni) 2, Nascondersi 5; Attacco Poderoso, Incalzare, Spezzare Migliorato; patto con un esterno malvagio.','Il paladino oscuro: punire il bene, aura di disperazione, comandare non morti, incantesimi divini e un servitore immondo.'],
@@ -1260,6 +1261,119 @@ const CL35X = [
 ['Sterminatore','Slayer',CP_PSI,'prestigio',10,'a','Temp, Vol',4,'Vedi SRD psionico.','Cacciatore di mind flayer e altre aberrazioni psioniche.'],
 ['Signore degli schiavi','Thrallherd',CP_PSI,'prestigio',4,'p','Vol',2,'Vedi SRD psionico.','Telepate che attira seguaci e un servitore fedele grazie al proprio carisma mentale.'],
 ['Mente guerriera','War Mind',CP_PSI,'prestigio',10,'a','Temp, Vol',2,'Vedi SRD psionico.','Guerriero psionico che entra in sintonia con la battaglia e moltiplica i colpi.'],
+// Classi di prestigio degli altri manuali: solo nome e sintesi
+['Guerriero orso','Bear Warrior','Perfetto Combattente','prestigio',0,'','',0,'','In battaglia si trasforma in un orso feroce.'],
+['Cavaliere errante','Cavalier','Perfetto Combattente','prestigio',0,'','',0,'','Cavaliere a cavallo maestro della carica con la lancia.'],
+['Derviscio','Dervish','Perfetto Combattente','prestigio',0,'','',0,'','Danza in combattimento con lame ricurve, muovendosi e colpendo più volte.'],
+['Maestro ubriaco','Drunken Master','Perfetto Combattente','prestigio',0,'','',0,'','Combatte con stile da ubriaco, usando bottiglie e oggetti come armi.'],
+['Maestro delle armi esotiche','Exotic Weapon Master','Perfetto Combattente','prestigio',0,'','',0,'','Padroneggia armi esotiche e ne sfrutta i trucchi speciali.'],
+['Occhio di Gruumsh','Eye of Gruumsh','Perfetto Combattente','prestigio',0,'','',0,'','Orco che si strappa un occhio in onore del suo dio e ne ottiene furia.'],
+['Berserker frenetico','Frenzied Berserker','Perfetto Combattente','prestigio',0,'','',0,'','Entra in frenesia e continua a combattere anche ridotto sotto zero punti ferita.'],
+['Cacciatore di giganti gnomo','Gnome Giant-Slayer','Perfetto Combattente','prestigio',0,'','',0,'','Gnomo addestrato a combattere i giganti.'],
+['Esploratore halfling a cavallo','Halfling Outrider','Perfetto Combattente','prestigio',0,'','',0,'','Halfling che combatte in sella a un cane o un pony.'],
+['Lanciatore possente','Hulking Hurler','Perfetto Combattente','prestigio',0,'','',0,'','Lancia massi e oggetti enormi contro i nemici.'],
+['Cacciatore dei morti','Hunter of the Dead','Perfetto Combattente','prestigio',0,'','',0,'','Specialista nella caccia e nella distruzione dei non morti.'],
+['Lama invisibile','Invisible Blade','Perfetto Combattente','prestigio',0,'','',0,'','Combatte col pugnale e sfrutta i nemici colti alla sprovvista.'],
+['Kensai','Kensai','Perfetto Combattente','prestigio',0,'','',0,'','Dedica la vita a un\'arma che col tempo diventa magica nelle sue mani.'],
+['Cavaliere protettore','Knight Protector','Perfetto Combattente','prestigio',0,'','',0,'','Cavaliere del codice antico che difende gli alleati.'],
+['Maestro samurai','Master Samurai','Perfetto Combattente','prestigio',0,'','',0,'','Samurai che raggiunge la perfezione nella via della spada.'],
+['Maestro lanciatore','Master Thrower','Perfetto Combattente','prestigio',0,'','',0,'','Lanciatore di armi preciso e rapido.'],
+['Iniziato dell\'Ordine dell\'Arco','Order of the Bow Initiate','Perfetto Combattente','prestigio',0,'','',0,'','Arciere zen che concentra ogni tiro in un colpo perfetto.'],
+['Devastatore','Ravager','Perfetto Combattente','prestigio',0,'','',0,'','Guerriero crudele devoto a un dio della distruzione, che semina terrore.'],
+['Tempesta','Tempest','Perfetto Combattente','prestigio',0,'','',0,'','Combatte con due armi in modo sempre più fluido.'],
+['Plasmaguerra','Warshaper','Perfetto Combattente','prestigio',0,'','',0,'','Mutaforma che modella il proprio corpo per la battaglia.'],
+['Accolito della pelle','Acolyte of the Skin','Perfetto Arcanista','prestigio',0,'','',0,'','Warlock che si fonde con la pelle di un demone.'],
+['Alienista','Alienist','Perfetto Arcanista','prestigio',0,'','',0,'','Evocatore che stringe rapporti con entità aliene e ne è segnato.'],
+['Sapiente argenteo','Argent Savant','Perfetto Arcanista','prestigio',0,'','',0,'','Maestro degli incantesimi di forza.'],
+['Mago del sangue','Blood Magus','Perfetto Arcanista','prestigio',0,'','',0,'','Incantatore che usa il proprio sangue come componente e resiste alla morte.'],
+['Maestro delle effigi','Effigy Master','Perfetto Arcanista','prestigio',0,'','',0,'','Costruttore di effigi animate.'],
+['Sapiente elementale','Elemental Savant','Perfetto Arcanista','prestigio',0,'','',0,'','Incantatore che si specializza in un elemento fino a diventarne parte.'],
+['Pugno illuminato','Enlightened Fist','Perfetto Arcanista','prestigio',0,'','',0,'','Monaco-mago che scarica incantesimi a contatto coi colpi.'],
+['Tessitore del fato','Fatespinner','Perfetto Arcanista','prestigio',0,'','',0,'','Incantatore che manipola fortuna e destino.'],
+['Geometra','Geometer','Perfetto Arcanista','prestigio',0,'','',0,'','Scrive incantesimi come figure geometriche e li lancia dalle pagine.'],
+['Adepto della Stella Verde','Green Star Adept','Perfetto Arcanista','prestigio',0,'','',0,'','Incantatore che trasforma il proprio corpo in materia stellare.'],
+['Iniziato del Settuplice Velo','Initiate of the Sevenfold Veil','Perfetto Arcanista','prestigio',0,'','',0,'','Abiuratore che si protegge con sette veli di colori diversi.'],
+['Mago dell\'Ordine Arcano','Mage of the Arcane Order','Perfetto Arcanista','prestigio',0,'','',0,'','Membro di una gilda di maghi che condivide gli slot degli incantesimi.'],
+['Piegamente','Mindbender','Perfetto Arcanista','prestigio',0,'','',0,'','Ammaliatore che domina le menti.'],
+['Cercatore del Canto','Seeker of the Song','Perfetto Arcanista','prestigio',0,'','',0,'','Bardo alla ricerca di canti antichi dagli effetti magici.'],
+['Accordo sublime','Sublime Chord','Perfetto Arcanista','prestigio',0,'','',0,'','Bardo che raggiunge la magia arcana di alto livello.'],
+['Arcanamach suel','Suel Arcanamach','Perfetto Arcanista','prestigio',0,'','',0,'','Guerriero-mago dell\'antica tradizione suel.'],
+['Guida viandante','Wayfarer Guide','Perfetto Arcanista','prestigio',0,'','',0,'','Esperto di teletrasporto che porta con sé altri viaggiatori.'],
+['Mago selvaggio','Wild Mage','Perfetto Arcanista','prestigio',0,'','',0,'','Incantatore che abbraccia il caos e lancia incantesimi dagli effetti imprevedibili.'],
+['Zelota della Fiamma Nera','Black Flame Zealot','Perfetto Sacerdote','prestigio',0,'','',0,'','Fanatico devoto che colpisce gli infedeli.'],
+['Inquisitore della chiesa','Church Inquisitor','Perfetto Sacerdote','prestigio',0,'','',0,'','Inquisitore che stana eresie e creature malvagie.'],
+['Molestatore consacrato','Consecrated Harrier','Perfetto Sacerdote','prestigio',0,'','',0,'','Cacciatore di nemici della fede.'],
+['Contemplativo','Contemplative','Perfetto Sacerdote','prestigio',0,'','',0,'','Sacerdote che si ritira nella contemplazione e ottiene un nuovo dominio e doni divini.'],
+['Crociato divino','Divine Crusader','Perfetto Sacerdote','prestigio',0,'','',0,'','Guerriero sacro che lancia incantesimi del dominio del suo dio.'],
+['Oracolo divino','Divine Oracle','Perfetto Sacerdote','prestigio',0,'','',0,'','Profeta che vede il futuro e sfugge al pericolo.'],
+['Entropomante','Entropomancer','Perfetto Sacerdote','prestigio',0,'','',0,'','Servitore dell\'entropia e del vuoto.'],
+['Geomante','Geomancer','Perfetto Sacerdote','prestigio',0,'','',0,'','Unisce magia arcana e divina legandosi a un luogo.'],
+['Ospitaliere','Hospitaler','Perfetto Sacerdote','prestigio',0,'','',0,'','Cavaliere guaritore che protegge i viaggiatori.'],
+['Maestro dei sudari','Master of Shrouds','Perfetto Sacerdote','prestigio',0,'','',0,'','Evoca e comanda spiriti incorporei.'],
+['Signore del mattino di Lathander','Morninglord of Lathander','Perfetto Sacerdote','prestigio',0,'','',0,'','Sacerdote dell\'alba e della rinascita.'],
+['Servitore radioso di Pelor','Radiant Servant of Pelor','Perfetto Sacerdote','prestigio',0,'','',0,'','Servitore di Pelor che diffonde luce e guarigione.'],
+['Esorcista sacro','Sacred Exorcist','Perfetto Sacerdote','prestigio',0,'','',0,'','Caccia e scaccia possessioni e spiriti maligni.'],
+['Pugno sacro','Sacred Fist','Perfetto Sacerdote','prestigio',0,'','',0,'','Monaco-sacerdote che combatte a mani nude con energia divina.'],
+['Cercatore dell\'Isola Nebbiosa','Seeker of the Misty Isle','Perfetto Sacerdote','prestigio',0,'','',0,'','Viaggiatore sacro che protegge i pellegrini.'],
+['Lama splendente di Heironeous','Shining Blade of Heironeous','Perfetto Sacerdote','prestigio',0,'','',0,'','Paladino che carica di elettricità la sua spada.'],
+['Signore della tempesta','Stormlord','Perfetto Sacerdote','prestigio',0,'','',0,'','Sacerdote della tempesta, lancia giavellotti carichi di fulmini.'],
+['Ala veloce','Swift Wing','Perfetto Sacerdote','prestigio',0,'','',0,'','Druido devoto ai draghi che acquisisce ali e velocità.'],
+['Predone del tempio di Olidammara','Temple Raider of Olidammara','Perfetto Sacerdote','prestigio',0,'','',0,'','Ladro sacro che saccheggia templi e dungeon.'],
+['Ur-sacerdote','Ur-Priest','Perfetto Sacerdote','prestigio',0,'','',0,'','Ruba potere divino agli dei senza adorarne alcuno.'],
+['Sacerdote guerriero','Warpriest','Perfetto Sacerdote','prestigio',0,'','',0,'','Sacerdote che guida e incoraggia le truppe.'],
+['Signore degli animali','Animal Lord','Perfetto Avventuriero','prestigio',0,'','',0,'','Druido o ranger che diventa signore di un tipo di animale.'],
+['Segugio','Bloodhound','Perfetto Avventuriero','prestigio',0,'','',0,'','Cacciatore di taglie che non perde mai una preda.'],
+['Mago dei pugnali','Daggerspell Mage','Perfetto Avventuriero','prestigio',0,'','',0,'','Combatte con due pugnali e lancia incantesimi arcani.'],
+['Plasmatore dei pugnali','Daggerspell Shaper','Perfetto Avventuriero','prestigio',0,'','',0,'','Druido che unisce forma selvatica e pugnali.'],
+['Pirata del terrore','Dread Pirate','Perfetto Avventuriero','prestigio',0,'','',0,'','Pirata temuto e carismatico.'],
+['Esploratore di dungeon','Dungeon Delver','Perfetto Avventuriero','prestigio',0,'','',0,'','Scopre trappole, passaggi e tesori nelle profondità.'],
+['Esemplare','Exemplar','Perfetto Avventuriero','prestigio',0,'','',0,'','Maestro assoluto delle proprie abilità.'],
+['Assassino dal volto spettrale','Ghost-Faced Killer','Perfetto Avventuriero','prestigio',0,'','',0,'','Assassino che terrorizza con la sua maschera e colpisce dall\'ombra.'],
+['Predatore degli altipiani','Highland Stalker','Perfetto Avventuriero','prestigio',0,'','',0,'','Cacciatore delle montagne.'],
+['Maester','Maester','Perfetto Avventuriero','prestigio',0,'','',0,'','Gnomo artigiano che crea oggetti magici con rapidità.'],
+['Maestro delle molte forme','Master of Many Forms','Perfetto Avventuriero','prestigio',0,'','',0,'','Druido che padroneggia ogni forma selvatica.'],
+['Esecutore dei Canti Notturni','Nightsong Enforcer','Perfetto Avventuriero','prestigio',0,'','',0,'','Guardia di una gilda di avventurieri, forte nel lavoro di squadra.'],
+['Infiltrato dei Canti Notturni','Nightsong Infiltrator','Perfetto Avventuriero','prestigio',0,'','',0,'','Scassinatore e arrampicatore della stessa gilda.'],
+['Inquisitore di Shadowbane','Shadowbane Inquisitor','Perfetto Avventuriero','prestigio',0,'','',0,'','Inquisitore sacro che stana il male nascosto.'],
+['Predatore di Shadowbane','Shadowbane Stalker','Perfetto Avventuriero','prestigio',0,'','',0,'','Cacciatore sacro di cultisti e malvagi.'],
+['Mente d\'ombra','Shadowmind','Perfetto Avventuriero','prestigio',0,'','',0,'','Ladro psionico che usa ombre e illusioni mentali.'],
+['Capo spia','Spymaster','Perfetto Avventuriero','prestigio',0,'','',0,'','Spia esperta in identità false e reti di informatori.'],
+['Combattente di strada','Streetfighter','Perfetto Avventuriero','prestigio',0,'','',0,'','Rissaiolo da vicolo con colpi sporchi.'],
+['Ladro acrobata','Thief-Acrobat','Perfetto Avventuriero','prestigio',0,'','',0,'','Acrobata dei tetti, salta e cade senza farsi male.'],
+['Vigilante','Vigilante','Perfetto Avventuriero','prestigio',0,'','',0,'','Giustiziere urbano che indaga e punisce i criminali.'],
+['Virtuoso','Virtuoso','Perfetto Avventuriero','prestigio',0,'','',0,'','Bardo che porta la sua musica oltre ogni limite.'],
+['Cavaliere delle pianure selvagge','Wild Plains Outrider','Perfetto Avventuriero','prestigio',0,'','',0,'','Guida a cavallo delle grandi pianure.'],
+['Campione abiurante','Abjurant Champion','Perfetto Mago','prestigio',0,'','',0,'','Guerriero-mago che protegge sé stesso con incantesimi di abiurazione.'],
+['Discepolo mistico','Eldritch Disciple','Perfetto Mago','prestigio',0,'','',0,'','Warlock devoto che unisce invocazioni e fede.'],
+['Teurgo mistico del patto','Eldritch Theurge','Perfetto Mago','prestigio',0,'','',0,'','Unisce invocazioni da warlock e incantesimi da mago.'],
+['Mago supremo','Ultimate Magus','Perfetto Mago','prestigio',0,'','',0,'','Avanza insieme come mago e come stregone.'],
+['Devoto arcano','Arcane Devotee','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Incantatore arcano devoto a una divinità della magia.'],
+['Campione divino','Divine Champion','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Campione combattente di una divinità dei Reami.'],
+['Discepolo divino','Divine Disciple','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Emissario sacerdotale di una divinità.'],
+['Cercatore divino','Divine Seeker','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Agente furtivo al servizio di un dio.'],
+['Ladro di gilda','Guild Thief','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Ladro di gilda con contatti e rifugi in città.'],
+['Esploratore arpista','Harper Scout','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Agente degli Arpisti, esploratore e custode del sapere.'],
+['Hathran','Hathran','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Incantatrice di Rashemen dai poteri mistici.'],
+['Cavaliere del Drago Purpureo','Purple Dragon Knight','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Cavaliere di Cormyr che guida e ispira le truppe.'],
+['Mago Rosso','Red Wizard','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Mago thayano specialista che lavora in cerchio con altri.'],
+['Scrittore di rune','Runecaster','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Incanala gli incantesimi in rune.'],
+['Adepto dell\'Ombra','Shadow Adept','Ambientazione di Forgotten Realms','prestigio',0,'','',0,'','Incantatore della Trama d\'Ombra di Shar.'],
+['Erede del marchio del drago','Dragonmark Heir','Ambientazione di Eberron','prestigio',0,'','',0,'','Erede che sviluppa i poteri del marchio della sua casata.'],
+['Ranger di Eldeen','Eldeen Ranger','Ambientazione di Eberron','prestigio',0,'','',0,'','Ranger dei boschi di Eldeen al servizio di una setta druidica.'],
+['Esorcista della Fiamma d\'Argento','Exorcist of the Silver Flame','Ambientazione di Eberron','prestigio',0,'','',0,'','Sacerdote della Fiamma d\'Argento contro il male soprannaturale.'],
+['Esploratore estremo','Extreme Explorer','Ambientazione di Eberron','prestigio',0,'','',0,'','Esploratore di rovine pieno di risorse e fortuna.'],
+['Erede di Siberys','Heir of Siberys','Ambientazione di Eberron','prestigio',0,'','',0,'','Portatore di un marchio di Siberys dai poteri straordinari.'],
+['Maestro inquisitore','Master Inquisitive','Ambientazione di Eberron','prestigio',0,'','',0,'','Investigatore che legge indizi e intuisce le menzogne.'],
+['Colosso forgiato','Warforged Juggernaut','Ambientazione di Eberron','prestigio',0,'','',0,'','Forgiato che diventa una macchina da guerra.'],
+['Maestro della bestia interiore','Weretouched Master','Ambientazione di Eberron','prestigio',0,'','',0,'','Mutante che sviluppa sempre più tratti animali.'],
+['Maestro dell\'artiglio di sangue','Bloodclaw Master','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Combattente con artigli della disciplina Zanna della Tigre.'],
+['Lama della tempesta di sangue','Bloodstorm Blade','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Lancia le armi come fossero manovre.'],
+['Sentinella della pietra profonda','Deepstone Sentinel','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Guardiano che controlla il terreno attorno a sé.'],
+['Lama eterna','Eternal Blade','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Elfo guidato da uno spirito antico che conosce le mosse dei nemici.'],
+['Mago della Fenice di Giada','Jade Phoenix Mage','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Mago che unisce le manovre della Fenice di Giada agli incantesimi.'],
+['Maestro delle Nove','Master of Nine','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Studia tutte le nove discipline marziali.'],
+['Vendicatore Cavaliere di Rubino','Ruby Knight Vindicator','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Cavaliere sacro che alterna incantesimi divini e manovre.'],
+['Ninja del Sole d\'Ombra','Shadow Sun Ninja','Tomo della Battaglia: Il Libro delle Nove Spade','prestigio',0,'','',0,'','Unisce luce e ombra nelle sue tecniche.'],
 // Manuale del Giocatore II
 ['Ammaliatore','Beguiler','Manuale del Giocatore II','base',6,'p','Vol',6,'','Incantatore arcano spontaneo con un elenco fisso di ammaliamenti e illusioni; molte abilità da ladro e attacco furtivo contro chi è sorpreso.'],
 ['Sciamano del drago','Dragon Shaman','Manuale del Giocatore II','base',10,'m','Temp, Vol',2,'','Adepto di un drago totem: aure che rinforzano gli alleati, soffio, resistenza all\'energia e infine ali.'],
@@ -1375,9 +1489,11 @@ function cpFiltri(kind, list){
   <div><label for="cp-m">Manuale</label><select id="cp-m" data-cp="cpm"><option value="">Tutti</option>${man.map(m => `<option ${S.cpm===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
   ${kind === 'classi' ? `<div><label for="cp-t">Tipo</label><select id="cp-t" data-cp="cpt"><option value="">Tutte</option>${[['base','Classi base'],['PNG','Classi da PNG']].map(([v,l]) => `<option value="${v}" ${S.cpt===v?'selected':''}>${l}</option>`).join('')}</select></div>` : ''}</div>`;
 }
+const cpReset = k => { if (S.cpv !== k) { S.cpv = k; S.cpq = S.cpm = S.cpt = ''; S.cpOpen.clear(); } };
 const cpMatch = x => (!S.cpq || (x.nome + ' ' + x.en).toLowerCase().includes(S.cpq.trim().toLowerCase())) && (!S.cpm || x.m === S.cpm) && (!S.cpt || !x.t || x.t === 'prestigio' || x.t === S.cpt);
 const cpRow = (k, v) => v ? `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>` : '';
 function cpClassi(pre){
+  cpReset(pre ? 'p' : 'c');
   const core = Object.entries(PGD.classi).map(([n, c]) => ({nome: n, en: '', m: CP_SRD + ' · Manuale del Giocatore', t: 'base', c}));
   const all = [...core, ...CL35X.map(([nome, en, m, t, dv, bab, ts, pa, req, sin]) => ({nome, en, m, t, dv, bab, ts, pa, req, sin}))];
   const tutte = all.filter(x => pre ? x.t === 'prestigio' : x.t !== 'prestigio'), list = tutte.filter(cpMatch);
@@ -1385,13 +1501,14 @@ function cpClassi(pre){
     if (x.c) { const c = x.c;
       return `<table class="sb"><tbody>${cpRow('Dado vita', 'd' + c.dv)}${cpRow('Bonus di attacco base', CPBAB[c.bab])}${cpRow('Tiri salvezza buoni', cpTs(c.ts))}${cpRow('Punti abilità per livello', c.pa + ' + mod. Int (×4 al 1º livello)')}${cpRow('Armi', c.armiTxt)}${cpRow('Abilità di classe', c.cs.join(', '))}${c.cast ? cpRow('Incantesimi', (c.cast.arc ? 'Arcani' : 'Divini') + ', caratteristica: ' + (CARX[c.cast.car] || c.cast.car)) : ''}</tbody></table>
       <h4>Capacità per livello</h4>${c.f.map(([l, n, d]) => `<p><b>${l}º · ${esc(n)}.</b> ${esc(d)}</p>`).join('')}`; }
-    return `<table class="sb"><tbody>${cpRow('Dado vita', x.dv ? 'd' + x.dv : '')}${cpRow('Bonus di attacco base', CPBAB[x.bab])}${cpRow('Tiri salvezza buoni', x.ts)}${cpRow('Punti abilità per livello', x.pa ? x.pa + ' + mod. Int' : '')}${cpRow('Requisiti', x.req)}</tbody></table><p>${esc(x.sin)}</p>${x.m.startsWith('SRD') ? '' : '<p class="muted" style="font-size:14px">Sintesi scritta per la Sala d\'Armi: per le capacità complete serve il manuale.</p>'}`;
+    return `<table class="sb"><tbody>${cpRow('Dado vita', x.dv ? 'd' + x.dv : '')}${cpRow('Bonus di attacco base', CPBAB[x.bab])}${cpRow('Tiri salvezza buoni', x.ts)}${cpRow('Punti abilità per livello', x.pa ? x.pa + ' + mod. Int' : '')}${cpRow('Requisiti', x.req)}</tbody></table><p>${esc(x.sin)}</p>${x.m.startsWith('SRD') ? '' : `<p class="muted" style="font-size:14px">Sintesi scritta per la Sala d'Armi: ${x.dv ? 'per le capacità complete' : 'per requisiti, dadi vita e capacità'} serve il manuale.</p>`}`;
   };
-  return `<div class="card"><h2>${pre ? 'Classi di prestigio' : 'Classi'}</h2><p class="muted">${pre ? `${tutte.length} classi di prestigio dell'SRD 3.5 (Guida del Dungeon Master e psioniche), con requisiti, dati principali e una sintesi. Tocca una classe per aprirla.` : `${tutte.length} classi: quelle del <i>Manuale del Giocatore</i> con tutte le capacità, le classi psioniche e da PNG dell'SRD 3.5, e le classi base degli altri manuali con i dati principali e una breve sintesi. Le classi di prestigio sono nella loro pagina. Tocca una classe per aprirla.`}</p>${cpFiltri(pre ? 'prestigio' : 'classi', tutte)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
+  return `<div class="card"><h2>${pre ? 'Classi di prestigio' : 'Classi'}</h2><p class="muted">${pre ? `${tutte.length} classi di prestigio: quelle dell'SRD 3.5 (Guida del Dungeon Master e psioniche) con requisiti, dati principali e una sintesi, e quelle degli altri manuali con il nome e una breve sintesi. Tocca una classe per aprirla.` : `${tutte.length} classi: quelle del <i>Manuale del Giocatore</i> con tutte le capacità, le classi psioniche e da PNG dell'SRD 3.5, e le classi base degli altri manuali con i dati principali e una breve sintesi. Le classi di prestigio sono nella loro pagina. Tocca una classe per aprirla.`}</p>${cpFiltri(pre ? 'prestigio' : 'classi', tutte)}<p class="muted" style="margin:10px 0 0">${list.length} risultati</p></div>
   <div class="card">${list.map(x => `<details class="pgf" data-cpk="${esc(x.nome)}" ${S.cpOpen.has(x.nome) ? 'open' : ''}><summary>${esc(x.nome)}${x.en && x.en !== x.nome ? ` <span class="muted">· ${esc(x.en)}</span>` : ''} <span class="tag">${esc(x.t === 'base' ? 'base' : x.t === 'PNG' ? 'PNG' : 'prestigio')}</span> <span class="muted" style="font-weight:400;font-size:14px">${esc(x.m)}</span></summary>${body(x)}</details>`).join('') || '<p class="empty">Nessuna classe trovata.</p>'}
   <p class="cred">Le regole dell'SRD 3.5 sono Open Game Content (Open Game License 1.0a, Wizards of the Coast). Gli altri manuali sono citati solo per nome, dati di base e una sintesi.</p></div>`;
 }
 function cpRazze(){
+  cpReset('r');
   const agg = b => Object.entries(b || {}).map(([k, v]) => (v > 0 ? '+' : '') + v + ' ' + (CARX[k] || k)).join(', ') || '—';
   const TG = {M: 'Media', P: 'Piccola'};
   const core = Object.entries(PGD.specie).map(([n, r]) => ({nome: n, en: '', m: CP_SRD + ' · Manuale del Giocatore', r}));
